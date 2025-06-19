@@ -54,15 +54,16 @@ const calculateDaysUntilClose = (closeDate: string | null): number => {
 const transformTenderToAlgoliaRecord = (tender: any): AlgoliaRecord => {
   const daysUntilClose = calculateDaysUntilClose(tender.close_date);
   
-  const MAX_DESC_LENGTH = 5000; // Max length for description fields
-  const MAX_OTHER_TEXT_LENGTH = 1000; // Max length for other long text fields
+  const MAX_DESC_LENGTH = 2000; // Reduced from 5000 to 2000
+  const MAX_OTHER_TEXT_LENGTH = 500; // Reduced from 1000 to 500
+  const MAX_SEARCHABLE_TEXT_LENGTH = 4000; // New limit for searchable text
 
   const truncatedDescription = truncateText(tender.description, MAX_DESC_LENGTH);
   const truncatedBidDescription = truncateText(tender.bid_description, MAX_DESC_LENGTH);
   const truncatedSpecialConditions = truncateText(tender.special_conditions, MAX_OTHER_TEXT_LENGTH);
 
   // Create a searchable text string from the truncated fields to stay within limits
-  const searchable_text = [
+  const combinedSearchableText = [
     tender.title,
     truncatedDescription,
     truncatedBidDescription,
@@ -78,6 +79,9 @@ const transformTenderToAlgoliaRecord = (tender: any): AlgoliaRecord => {
   .filter(field => field && typeof field === 'string')
   .join(' ')
   .toLowerCase();
+
+  // Apply additional truncation to searchable text to ensure record size limits
+  const searchable_text = truncateText(combinedSearchableText, MAX_SEARCHABLE_TEXT_LENGTH);
 
   return {
     objectID: tender.ocid,
@@ -95,7 +99,7 @@ const transformTenderToAlgoliaRecord = (tender: any): AlgoliaRecord => {
     service_location: tender.service_location || '',
     submission_method: tender.submission_method || '',
     special_conditions: truncatedSpecialConditions, // Use the truncated version
-    searchable_text: searchable_text, // Use the newly created searchable text
+    searchable_text: searchable_text, // Use the truncated searchable text
     days_until_close: daysUntilClose,
     is_open: daysUntilClose > 0,
     created_at: tender.created_at || '',

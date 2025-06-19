@@ -28,10 +28,10 @@ Deno.serve(async (req) => {
     // Calculate offset
     const offset = (page - 1) * limit;
     
-    // Build query
+    // Build query - include view_count in selection
     let query = supabase
       .from('tenders')
-      .select('*', { count: 'exact' });
+      .select('*, view_count', { count: 'exact' });
     
     // Filter for open tenders only if requested
     if (openOnly) {

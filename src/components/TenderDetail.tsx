@@ -12,12 +12,15 @@ import {
   Clock,
   Tag,
   AlertCircle,
-  Download
+  Download,
+  Eye,
+  TrendingUp
 } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import SkeletonDetail from './SkeletonDetail';
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
+import { trackTenderView, getTenderViewStats } from '../lib/supabase';
 
 const TenderDetail: React.FC = () => {
   const { ocid } = useParams<{ ocid: string }>();
@@ -25,6 +28,7 @@ const TenderDetail: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [viewStats, setViewStats] = useState<any>(null);
 
   useEffect(() => {
     const fetchTenderDetail = async () => {
@@ -62,6 +66,20 @@ const TenderDetail: React.FC = () => {
         
         setTender(tenderData[0]);
         
+        // Track the view
+        const viewResult = await trackTenderView(decodeURIComponent(ocid));
+        if (viewResult.success) {
+          // Update the tender's view count in state
+          setTender((prev: any) => ({
+            ...prev,
+            view_count: viewResult.viewCount
+          }));
+        }
+
+        // Get detailed view stats
+        const { data: stats } = await getTenderViewStats(decodeURIComponent(ocid));
+        setViewStats(stats);
+        
       } catch (err) {
         console.error('Error fetching tender detail:', err);
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -89,6 +107,15 @@ const TenderDetail: React.FC = () => {
     const diffTime = end.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
+  };
+
+  const formatViewCount = (count: number) => {
+    if (count >= 1000000) {
+      return `${(count / 1000000).toFixed(1)}M`;
+    } else if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}K`;
+    }
+    return count.toString();
   };
 
   const downloadDocument = async (doc: any) => {
@@ -166,6 +193,7 @@ const TenderDetail: React.FC = () => {
   const tenderData = tender.full_data?.tender || tender.full_data || tender;
   const closeDate = tender.close_date;
   const daysUntilClose = closeDate ? getDaysUntilClose(closeDate) : null;
+  const viewCount = tender.view_count || 0;
 
   return (
     <>
@@ -195,13 +223,27 @@ const TenderDetail: React.FC = () => {
                     {tender.bid_number}
                   </span>
                 )}
+                {viewCount > 0 && (
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200">
+                    <Eye className="w-4 h-4" />
+                    <span className="font-medium">{formatViewCount(viewCount)} views</span>
+                  </div>
+                )}
               </div>
 
-              {tender.category && (
-                <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200 text-sm font-medium">
-                  {tender.category}
-                </span>
-              )}
+              <div className="flex flex-wrap items-center gap-2">
+                {tender.category && (
+                  <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200 text-sm font-medium">
+                    {tender.category}
+                  </span>
+                )}
+                {viewStats && (
+                  <div className="flex items-center space-x-1 px-2 py-1 bg-gray-50 text-gray-600 rounded text-xs">
+                    <TrendingUp className="w-3 h-3" />
+                    <span>{viewStats.views_today} today</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Status and Actions */}
@@ -336,6 +378,31 @@ const TenderDetail: React.FC = () => {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* View Statistics */}
+            {viewStats && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">View Statistics</h2>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Total Views</span>
+                    <span className="font-semibold text-gray-900">{formatViewCount(viewStats.total_views)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Unique Viewers</span>
+                    <span className="font-semibold text-gray-900">{formatViewCount(viewStats.unique_viewers)}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Views Today</span>
+                    <span className="font-semibold text-gray-900">{viewStats.views_today}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">This Week</span>
+                    <span className="font-semibold text-gray-900">{viewStats.views_this_week}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Key Information */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Key Information</h2>

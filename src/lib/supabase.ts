@@ -76,3 +76,67 @@ export const getUserBookmarks = async (page = 1, limit = 24) => {
     });
   return { data, error };
 };
+
+// View tracking helper functions
+export const trackTenderView = async (tenderOcid: string) => {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase configuration missing');
+      return { success: false, viewCount: 0 };
+    }
+
+    // Get auth token if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    const authToken = session?.access_token;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/track-view`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        tenderOcid,
+        userAgent: navigator.userAgent
+      })
+    });
+
+    if (!response.ok) {
+      console.error('Failed to track view:', response.status);
+      return { success: false, viewCount: 0 };
+    }
+
+    const result = await response.json();
+    return {
+      success: result.success,
+      viewCount: result.viewCount,
+      viewRecorded: result.viewRecorded
+    };
+  } catch (error) {
+    console.error('Error tracking view:', error);
+    return { success: false, viewCount: 0 };
+  }
+};
+
+export const getTenderViewStats = async (tenderOcid: string) => {
+  const { data, error } = await supabase
+    .rpc('get_tender_view_stats', { p_tender_ocid: tenderOcid });
+  return { data: data?.[0] || null, error };
+};
+
+export const getPopularTenders = async (limit = 10, daysBack = 7) => {
+  const { data, error } = await supabase
+    .rpc('get_popular_tenders', { 
+      limit_count: limit, 
+      days_back: daysBack 
+    });
+  return { data, error };
+};

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Building, ExternalLink, Clock, AlertTriangle } from 'lucide-react';
+import { Calendar, Building, ExternalLink, Clock, AlertTriangle, Eye } from 'lucide-react';
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
 
@@ -27,6 +27,15 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
     return diffDays;
   };
 
+  const formatViewCount = (count: number) => {
+    if (count >= 1000000) {
+      return `${(count / 1000000).toFixed(1)}M`;
+    } else if (count >= 1000) {
+      return `${(count / 1000).toFixed(1)}K`;
+    }
+    return count.toString();
+  };
+
   const daysUntilClose = tender.closeDate || tender.close_date
     ? getDaysUntilClose(tender.closeDate || tender.close_date)
     : null;
@@ -49,6 +58,8 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
     setShowAuthModal(false);
   };
 
+  const viewCount = tender.view_count || 0;
+
   return (
     <>
       <div className="bg-white rounded-lg border border-gray-200 p-5 hover:border-gray-300 hover:shadow-sm transition-all duration-200 h-full flex flex-col">
@@ -60,11 +71,19 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
                 {tender.title || 'Untitled Tender'}
               </h3>
             </Link>
-            {tender.category && (
-              <span className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-200">
-                {tender.category}
-              </span>
-            )}
+            <div className="flex items-center space-x-2 mb-2">
+              {tender.category && (
+                <span className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-200">
+                  {tender.category}
+                </span>
+              )}
+              {viewCount > 0 && (
+                <div className="flex items-center space-x-1 px-2 py-1 bg-gray-50 text-gray-600 rounded text-xs font-medium border border-gray-200">
+                  <Eye className="w-3 h-3" />
+                  <span>{formatViewCount(viewCount)}</span>
+                </div>
+              )}
+            </div>
           </div>
           <div className="ml-3 flex-shrink-0">
             <Link to={`/tender/${encodeURIComponent(tender.ocid)}`}>

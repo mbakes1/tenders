@@ -38,16 +38,25 @@ export const getCurrentUser = async () => {
 
 // Bookmark helper functions
 export const addBookmark = async (tenderOcid: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { data: null, error: { message: "User is not authenticated." } as any };
+  }
   const { data, error } = await supabase
     .from('bookmarks')
-    .insert({ tender_ocid: tenderOcid });
+    .insert({ tender_ocid: tenderOcid, user_id: user.id });
   return { data, error };
 };
 
 export const removeBookmark = async (tenderOcid: string) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: { message: "User is not authenticated." } as any };
+  }
   const { error } = await supabase
     .from('bookmarks')
     .delete()
+    .eq('user_id', user.id)
     .eq('tender_ocid', tenderOcid);
   return { error };
 };

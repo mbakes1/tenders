@@ -20,7 +20,8 @@ Deno.serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Call the sync-tenders function
+    // Step 1: Sync tenders from external API to database
+    console.log('📊 Step 1: Syncing tenders to database...');
     const syncResponse = await fetch(`${supabaseUrl}/functions/v1/sync-tenders`, {
       method: 'POST',
       headers: {
@@ -40,11 +41,51 @@ Deno.serve(async (req) => {
       throw new Error(`Sync operation failed: ${syncResult.error}`);
     }
 
-    console.log('✅ Automated sync completed successfully:', {
+    console.log('✅ Database sync completed successfully:', {
       totalFetched: syncResult.stats?.totalFetched || 0,
       openTenders: syncResult.stats?.openTenders || 0,
       executionTime: syncResult.stats?.executionTimeMs || 0
     });
+
+    // Step 2: Index tenders to Algolia (if configured)
+    const algoliaAppId = Deno.env.get('ALGOLIA_APP_ID');
+    const algoliaAdminKey = Deno.env.get('ALGOLIA_ADMIN_KEY');
+    
+    let algoliaResult = null;
+    
+    if (algoliaAppId && algoliaAdminKey) {
+      console.log('🔍 Step 2: Indexing tenders to Algolia...');
+      
+      try {
+        const algoliaResponse = await fetch(`${supabaseUrl}/functions/v1/index-tenders-to-algolia`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (algoliaResponse.ok) {
+          algoliaResult = await algoliaResponse.json();
+          
+          if (algoliaResult.success) {
+            console.log('✅ Algolia indexing completed successfully:', {
+              indexed: algoliaResult.stats?.indexed || 0,
+              total: algoliaResult.stats?.total || 0
+            });
+          } else {
+            console.warn('⚠️ Algolia indexing failed:', algoliaResult.error);
+          }
+        } else {
+          console.warn('⚠️ Algolia indexing request failed:', algoliaResponse.status);
+        }
+      } catch (algoliaError) {
+        console.warn('⚠️ Algolia indexing error:', algoliaError);
+        // Don't fail the entire process if Algolia fails
+      }
+    } else {
+      console.log('ℹ️ Algolia not configured, skipping search indexing');
+    }
 
     // Return success response
     return new Response(
@@ -52,7 +93,10 @@ Deno.serve(async (req) => {
         success: true,
         message: 'Automated tender sync completed successfully',
         timestamp: new Date().toISOString(),
-        stats: syncResult.stats
+        stats: {
+          database: syncResult.stats,
+          algolia: algoliaResult?.stats || null
+        }
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

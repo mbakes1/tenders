@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp } from 'lucide-react';
+import { RefreshCw, Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp, Search } from 'lucide-react';
+import { InstantSearch, Configure } from 'react-instantsearch';
+import algoliasearch from 'algoliasearch/lite';
 import LoadingSpinner from './LoadingSpinner';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
+import SearchBox from './SearchBox';
+import SearchFilters from './SearchFilters';
+import SearchResults from './SearchResults';
 
 interface TenderData {
   success: boolean;
@@ -29,7 +34,26 @@ const TenderList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLoading, setPageLoading] = useState(false);
+  const [searchMode, setSearchMode] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [algoliaConfigured, setAlgoliaConfigured] = useState(false);
   const tendersPerPage = 24;
+
+  // Initialize Algolia client
+  const algoliaClient = React.useMemo(() => {
+    const appId = import.meta.env.VITE_ALGOLIA_APP_ID;
+    const searchKey = import.meta.env.VITE_ALGOLIA_SEARCH_KEY;
+    
+    if (appId && searchKey) {
+      setAlgoliaConfigured(true);
+      return algoliasearch(appId, searchKey);
+    }
+    
+    setAlgoliaConfigured(false);
+    return null;
+  }, []);
+
+  const indexName = import.meta.env.VITE_ALGOLIA_INDEX_NAME || 'tenders';
 
   const fetchTendersFromDatabase = async (page = 1) => {
     try {
@@ -146,13 +170,8 @@ const TenderList: React.FC = () => {
           </div>
         </div>
 
-        {/* Pagination Info Skeleton */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
-          <div className="flex items-center justify-between">
-            <div className="h-4 bg-gray-200 rounded w-64"></div>
-            <div className="h-4 bg-gray-200 rounded w-24"></div>
-          </div>
-        </div>
+        {/* Search Box Skeleton */}
+        <div className="h-12 bg-gray-200 rounded-lg animate-pulse"></div>
 
         {/* Tenders Grid Skeleton */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -185,6 +204,76 @@ const TenderList: React.FC = () => {
     );
   }
 
+  // Render search interface if Algolia is configured
+  if (algoliaConfigured && algoliaClient && searchMode) {
+    return (
+      <InstantSearch searchClient={algoliaClient} indexName={indexName}>
+        <Configure hitsPerPage={24} filters="is_open:true" />
+        
+        <div className="space-y-6">
+          {/* Stats Section */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <Search className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">Search Tenders</h2>
+                    <p className="text-gray-600 font-medium">Powered by Algolia</p>
+                  </div>
+                </div>
+                
+                {data?.stats.last_updated && (
+                  <div className="flex items-center space-x-2 text-sm text-gray-500">
+                    <Clock className="w-4 h-4" />
+                    <span>Database updated: {new Date(data.stats.last_updated).toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setSearchMode(false)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors font-medium"
+                >
+                  <span>Browse All</span>
+                </button>
+                
+                <button
+                  onClick={refreshTenders}
+                  disabled={refreshing}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                >
+                  <RefreshCw className={`w-4 h-4 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
+                  <span className="text-gray-700">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Search Box */}
+          <SearchBox />
+
+          {/* Search Content */}
+          <div className="grid gap-6 lg:grid-cols-4">
+            <div className="lg:col-span-1">
+              <SearchFilters 
+                isOpen={filtersOpen} 
+                onToggle={() => setFiltersOpen(!filtersOpen)} 
+              />
+            </div>
+            <div className="lg:col-span-3">
+              <SearchResults />
+            </div>
+          </div>
+        </div>
+      </InstantSearch>
+    );
+  }
+
+  // Regular database browsing interface
   return (
     <div className="space-y-6">
       {/* Stats Section */}
@@ -240,6 +329,16 @@ const TenderList: React.FC = () => {
           </div>
           
           <div className="flex space-x-3">
+            {algoliaConfigured && (
+              <button
+                onClick={() => setSearchMode(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+              >
+                <Search className="w-4 h-4" />
+                <span>Search</span>
+              </button>
+            )}
+            
             <button
               onClick={refreshTenders}
               disabled={refreshing}
@@ -250,6 +349,23 @@ const TenderList: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Algolia Status */}
+        {!algoliaConfigured && (
+          <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Search className="w-4 h-4 text-amber-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-amber-900">Search Feature Available</p>
+                <p className="text-sm text-amber-700">
+                  Configure Algolia API keys to enable advanced search functionality.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Auto-sync Notice */}
         <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">

@@ -23,6 +23,7 @@ Deno.serve(async (req) => {
     const page = parseInt(url.searchParams.get('page') || '1');
     const limit = parseInt(url.searchParams.get('limit') || '1000');
     const openOnly = url.searchParams.get('openOnly') === 'true';
+    const searchQuery = url.searchParams.get('search') || '';
     
     // Calculate offset
     const offset = (page - 1) * limit;
@@ -35,6 +36,53 @@ Deno.serve(async (req) => {
     // Filter for open tenders only if requested
     if (openOnly) {
       query = query.gt('close_date', new Date().toISOString());
+    }
+    
+    // Add search functionality if search query is provided
+    if (searchQuery.trim()) {
+      // Use the search_tenders function for better performance
+      const { data: searchResults, error: searchError, count } = await supabase
+        .rpc('search_tenders', {
+          search_term: searchQuery.trim(),
+          limit_count: limit,
+          offset_count: offset
+        });
+      
+      if (searchError) {
+        console.error('Search function error:', searchError);
+        // Fallback to basic text search if the function fails
+        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,buyer.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%,department.ilike.%${searchQuery}%`);
+      } else {
+        // Return search results directly
+        const { data: stats } = await supabase.rpc('get_tender_stats');
+        
+        const result = {
+          success: true,
+          tenders: searchResults || [],
+          pagination: {
+            page,
+            limit,
+            total: searchResults?.length || 0,
+            totalPages: Math.ceil((searchResults?.length || 0) / limit)
+          },
+          stats: stats?.[0] || {
+            total_tenders: 0,
+            open_tenders: 0,
+            closing_soon: 0,
+            last_updated: null
+          },
+          lastUpdated: new Date().toISOString()
+        };
+        
+        console.log(`Search returned ${searchResults?.length || 0} results for "${searchQuery}"`);
+        
+        return new Response(
+          JSON.stringify(result),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          },
+        );
+      }
     }
     
     // Order by close date (most urgent first for open tenders)

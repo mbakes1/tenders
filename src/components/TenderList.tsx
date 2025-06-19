@@ -1,13 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp, Search } from 'lucide-react';
-import { InstantSearch, Configure } from 'react-instantsearch';
-import algoliasearch from 'algoliasearch/lite';
+import { RefreshCw, Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp, Search, X } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
-import SearchBox from './SearchBox';
-import SearchFilters from './SearchFilters';
-import SearchResults from './SearchResults';
 
 interface TenderData {
   success: boolean;
@@ -34,29 +29,11 @@ const TenderList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLoading, setPageLoading] = useState(false);
-  const [searchMode, setSearchMode] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [algoliaConfigured, setAlgoliaConfigured] = useState(false);
-  const [indexingStatus, setIndexingStatus] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
   const tendersPerPage = 24;
 
-  // Initialize Algolia client
-  const algoliaClient = React.useMemo(() => {
-    const appId = import.meta.env.VITE_ALGOLIA_APP_ID;
-    const searchKey = import.meta.env.VITE_ALGOLIA_SEARCH_KEY;
-    
-    if (appId && searchKey) {
-      setAlgoliaConfigured(true);
-      return algoliasearch(appId, searchKey);
-    }
-    
-    setAlgoliaConfigured(false);
-    return null;
-  }, []);
-
-  const indexName = import.meta.env.VITE_ALGOLIA_INDEX_NAME || 'tenders';
-
-  const fetchTendersFromDatabase = async (page = 1) => {
+  const fetchTendersFromDatabase = async (page = 1, search = '') => {
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -65,9 +42,10 @@ const TenderList: React.FC = () => {
         throw new Error('Supabase configuration missing. Please check your environment variables.');
       }
 
-      console.log(`Fetching tenders from database (page ${page})...`);
+      console.log(`Fetching tenders from database (page ${page}, search: "${search}")...`);
 
-      const response = await fetch(`${supabaseUrl}/functions/v1/get-tenders?page=${page}&limit=${tendersPerPage}&openOnly=true`, {
+      const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
+      const response = await fetch(`${supabaseUrl}/functions/v1/get-tenders?page=${page}&limit=${tendersPerPage}&openOnly=true${searchParam}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${supabaseKey}`,
@@ -109,45 +87,10 @@ const TenderList: React.FC = () => {
     }
   };
 
-  const triggerAlgoliaIndexing = async () => {
-    try {
-      setIndexingStatus('Indexing tenders to Algolia...');
-      
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      const response = await fetch(`${supabaseUrl}/functions/v1/index-tenders-to-algolia`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Indexing failed: ${response.status} ${errorText}`);
-      }
-
-      const result = await response.json();
-      
-      if (result.success) {
-        setIndexingStatus(`Successfully indexed ${result.stats?.indexed || 0} tenders to Algolia`);
-        setTimeout(() => setIndexingStatus(null), 5000);
-      } else {
-        throw new Error(result.error || 'Indexing failed');
-      }
-    } catch (error) {
-      console.error('Algolia indexing error:', error);
-      setIndexingStatus(`Indexing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setTimeout(() => setIndexingStatus(null), 5000);
-    }
-  };
-
   const refreshTenders = async () => {
     setRefreshing(true);
     try {
-      await fetchTendersFromDatabase(currentPage);
+      await fetchTendersFromDatabase(currentPage, searchQuery);
     } finally {
       setRefreshing(false);
     }
@@ -157,7 +100,7 @@ const TenderList: React.FC = () => {
     setCurrentPage(page);
     setPageLoading(true);
     try {
-      await fetchTendersFromDatabase(page);
+      await fetchTendersFromDatabase(page, searchQuery);
     } finally {
       setPageLoading(false);
     }
@@ -174,6 +117,23 @@ const TenderList: React.FC = () => {
     if (data && currentPage < data.pagination.totalPages) {
       goToPage(currentPage + 1);
     }
+  };
+
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1);
+    setSearchLoading(true);
+    try {
+      await fetchTendersFromDatabase(1, query);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setCurrentPage(1);
+    fetchTendersFromDatabase(1, '');
   };
 
   useEffect(() => {
@@ -236,114 +196,20 @@ const TenderList: React.FC = () => {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to load tenders</h3>
           <p className="text-red-600 text-sm mb-6">{error}</p>
-          <div className="space-y-3">
-            <button
-              onClick={refreshTenders}
-              disabled={refreshing}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
-            >
-              {refreshing ? 'Retrying...' : 'Try Again'}
-            </button>
-            
-            {algoliaConfigured && (
-              <button
-                onClick={triggerAlgoliaIndexing}
-                disabled={!!indexingStatus}
-                className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors font-medium"
-              >
-                {indexingStatus || 'Index Data to Algolia'}
-              </button>
-            )}
-          </div>
+          <button
+            onClick={refreshTenders}
+            disabled={refreshing}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
+          >
+            {refreshing ? 'Retrying...' : 'Try Again'}
+          </button>
         </div>
       </div>
     );
   }
 
-  // Render search interface if Algolia is configured
-  if (algoliaConfigured && algoliaClient && searchMode) {
-    return (
-      <InstantSearch searchClient={algoliaClient} indexName={indexName}>
-        <Configure hitsPerPage={24} filters="is_open:true" />
-        
-        <div className="space-y-6">
-          {/* Stats Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <Search className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Search Tenders</h2>
-                    <p className="text-gray-600 font-medium">Powered by Algolia</p>
-                  </div>
-                </div>
-                
-                {data?.stats.last_updated && (
-                  <div className="flex items-center space-x-2 text-sm text-gray-500">
-                    <Clock className="w-4 h-4" />
-                    <span>Database updated: {new Date(data.stats.last_updated).toLocaleString()}</span>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setSearchMode(false)}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors font-medium"
-                >
-                  <span>Browse All</span>
-                </button>
-                
-                <button
-                  onClick={refreshTenders}
-                  disabled={refreshing}
-                  className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-                >
-                  <RefreshCw className={`w-4 h-4 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
-                  <span className="text-gray-700">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Search Box */}
-          <SearchBox />
-
-          {/* Search Content */}
-          <div className="grid gap-6 lg:grid-cols-4">
-            <div className="lg:col-span-1">
-              <SearchFilters 
-                isOpen={filtersOpen} 
-                onToggle={() => setFiltersOpen(!filtersOpen)} 
-              />
-            </div>
-            <div className="lg:col-span-3">
-              <SearchResults />
-            </div>
-          </div>
-        </div>
-      </InstantSearch>
-    );
-  }
-
-  // Regular database browsing interface
   return (
     <div className="space-y-6">
-      {/* Indexing Status */}
-      {indexingStatus && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Search className="w-4 h-4 text-blue-600" />
-            </div>
-            <p className="text-blue-800 font-medium">{indexingStatus}</p>
-          </div>
-        </div>
-      )}
-
       {/* Stats Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
@@ -397,25 +263,6 @@ const TenderList: React.FC = () => {
           </div>
           
           <div className="flex space-x-3">
-            {algoliaConfigured && (
-              <button
-                onClick={() => setSearchMode(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
-              >
-                <Search className="w-4 h-4" />
-                <span>Search</span>
-              </button>
-            )}
-            
-            <button
-              onClick={triggerAlgoliaIndexing}
-              disabled={!!indexingStatus}
-              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 transition-colors font-medium"
-            >
-              <Database className="w-4 h-4" />
-              <span>{indexingStatus ? 'Indexing...' : 'Index to Algolia'}</span>
-            </button>
-            
             <button
               onClick={refreshTenders}
               disabled={refreshing}
@@ -426,37 +273,6 @@ const TenderList: React.FC = () => {
             </button>
           </div>
         </div>
-
-        {/* Algolia Status */}
-        {algoliaConfigured ? (
-          <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Search className="w-4 h-4 text-green-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-green-900">Algolia Search Ready</p>
-                <p className="text-sm text-green-700">
-                  Advanced search functionality is configured and ready to use.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Search className="w-4 h-4 text-amber-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-amber-900">Search Feature Available</p>
-                <p className="text-sm text-amber-700">
-                  Configure Algolia API keys to enable advanced search functionality.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Auto-sync Notice */}
         <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -472,29 +288,42 @@ const TenderList: React.FC = () => {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Quick Search Test Section */}
-        {algoliaConfigured && (
-          <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Search className="w-4 h-4 text-purple-600" />
-                </div>
-                <div>
-                  <p className="font-semibold text-purple-900">Test Algolia Search</p>
-                  <p className="text-sm text-purple-700">
-                    Click the "Search" button above to test the Algolia search functionality with filters and instant results.
-                  </p>
-                </div>
+      {/* Search Box */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="relative">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            placeholder="Search tenders by title, description, buyer, category, or department..."
+            className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+          />
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors"
+            >
+              <X className="h-5 w-5 text-gray-400" />
+            </button>
+          )}
+        </div>
+        {searchQuery && (
+          <div className="mt-2 text-sm text-gray-600">
+            {searchLoading ? (
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
+                <span>Searching...</span>
               </div>
-              <button
-                onClick={() => setSearchMode(true)}
-                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-sm"
-              >
-                Try Search
-              </button>
-            </div>
+            ) : (
+              <span>
+                Showing results for: <span className="font-medium text-gray-900">"{searchQuery}"</span>
+              </span>
+            )}
           </div>
         )}
       </div>
@@ -506,7 +335,7 @@ const TenderList: React.FC = () => {
             <p className="text-sm text-gray-600">
               Showing <span className="text-gray-900 font-medium">{((currentPage - 1) * tendersPerPage) + 1}</span> to{' '}
               <span className="text-gray-900 font-medium">{Math.min(currentPage * tendersPerPage, data.pagination.total)}</span> of{' '}
-              <span className="text-gray-900 font-medium">{data.pagination.total.toLocaleString()}</span> open tenders
+              <span className="text-gray-900 font-medium">{data.pagination.total.toLocaleString()}</span> {searchQuery ? 'matching' : 'open'} tenders
             </p>
             <p className="text-sm text-gray-500">
               Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{data.pagination.totalPages}</span>
@@ -520,17 +349,30 @@ const TenderList: React.FC = () => {
         <div className="text-center py-16">
           <div className="bg-white rounded-lg border border-gray-200 p-12 max-w-md mx-auto">
             <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Database className="w-6 h-6 text-gray-400" />
+              {searchQuery ? <Search className="w-6 h-6 text-gray-400" /> : <Database className="w-6 h-6 text-gray-400" />}
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No open tenders found</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {searchQuery ? 'No matching tenders found' : 'No open tenders found'}
+            </h3>
             <p className="text-gray-600 mb-4">
-              No open tenders are currently available in the database. Our system automatically updates every 6 hours.
+              {searchQuery 
+                ? `No tenders match your search for "${searchQuery}". Try different keywords or clear the search.`
+                : 'No open tenders are currently available in the database. Our system automatically updates every 6 hours.'
+              }
             </p>
+            {searchQuery && (
+              <button
+                onClick={clearSearch}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+              >
+                Clear Search
+              </button>
+            )}
           </div>
         </div>
       ) : (
         <>
-          {pageLoading ? (
+          {pageLoading || searchLoading ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: tendersPerPage }, (_, index) => (
                 <SkeletonCard key={index} />
@@ -552,7 +394,7 @@ const TenderList: React.FC = () => {
               <div className="flex items-center justify-between">
                 <button
                   onClick={goToPrevious}
-                  disabled={currentPage === 1 || pageLoading}
+                  disabled={currentPage === 1 || pageLoading || searchLoading}
                   className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -576,7 +418,7 @@ const TenderList: React.FC = () => {
                       <button
                         key={pageNum}
                         onClick={() => goToPage(pageNum)}
-                        disabled={pageLoading}
+                        disabled={pageLoading || searchLoading}
                         className={`px-3 py-2 rounded-md transition-colors font-medium text-sm disabled:opacity-50 ${
                           currentPage === pageNum
                             ? 'bg-blue-600 text-white'
@@ -593,7 +435,7 @@ const TenderList: React.FC = () => {
                       <span className="px-2 text-gray-400">...</span>
                       <button
                         onClick={() => goToPage(data.pagination.totalPages)}
-                        disabled={pageLoading}
+                        disabled={pageLoading || searchLoading}
                         className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm disabled:opacity-50"
                       >
                         {data.pagination.totalPages}
@@ -604,7 +446,7 @@ const TenderList: React.FC = () => {
 
                 <button
                   onClick={goToNext}
-                  disabled={currentPage === data.pagination.totalPages || pageLoading}
+                  disabled={currentPage === data.pagination.totalPages || pageLoading || searchLoading}
                   className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   <span>Next</span>

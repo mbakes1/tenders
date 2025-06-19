@@ -37,6 +37,7 @@ const TenderList: React.FC = () => {
   const [searchMode, setSearchMode] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [algoliaConfigured, setAlgoliaConfigured] = useState(false);
+  const [indexingStatus, setIndexingStatus] = useState<string | null>(null);
   const tendersPerPage = 24;
 
   // Initialize Algolia client
@@ -76,7 +77,15 @@ const TenderList: React.FC = () => {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Response error:', errorText);
         throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const responseText = await response.text();
+        console.error('Non-JSON response:', responseText);
+        throw new Error('Server returned non-JSON response. Please check if the edge function is deployed correctly.');
       }
 
       const result = await response.json();
@@ -97,6 +106,41 @@ const TenderList: React.FC = () => {
       }
       
       setError(errorMessage);
+    }
+  };
+
+  const triggerAlgoliaIndexing = async () => {
+    try {
+      setIndexingStatus('Indexing tenders to Algolia...');
+      
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/index-tenders-to-algolia`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Indexing failed: ${response.status} ${errorText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setIndexingStatus(`Successfully indexed ${result.stats?.indexed || 0} tenders to Algolia`);
+        setTimeout(() => setIndexingStatus(null), 5000);
+      } else {
+        throw new Error(result.error || 'Indexing failed');
+      }
+    } catch (error) {
+      console.error('Algolia indexing error:', error);
+      setIndexingStatus(`Indexing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setTimeout(() => setIndexingStatus(null), 5000);
     }
   };
 
@@ -192,13 +236,25 @@ const TenderList: React.FC = () => {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to load tenders</h3>
           <p className="text-red-600 text-sm mb-6">{error}</p>
-          <button
-            onClick={refreshTenders}
-            disabled={refreshing}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
-          >
-            {refreshing ? 'Retrying...' : 'Try Again'}
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={refreshTenders}
+              disabled={refreshing}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
+            >
+              {refreshing ? 'Retrying...' : 'Try Again'}
+            </button>
+            
+            {algoliaConfigured && (
+              <button
+                onClick={triggerAlgoliaIndexing}
+                disabled={!!indexingStatus}
+                className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 transition-colors font-medium"
+              >
+                {indexingStatus || 'Index Data to Algolia'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -276,6 +332,18 @@ const TenderList: React.FC = () => {
   // Regular database browsing interface
   return (
     <div className="space-y-6">
+      {/* Indexing Status */}
+      {indexingStatus && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Search className="w-4 h-4 text-blue-600" />
+            </div>
+            <p className="text-blue-800 font-medium">{indexingStatus}</p>
+          </div>
+        </div>
+      )}
+
       {/* Stats Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
@@ -340,6 +408,15 @@ const TenderList: React.FC = () => {
             )}
             
             <button
+              onClick={triggerAlgoliaIndexing}
+              disabled={!!indexingStatus}
+              className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 transition-colors font-medium"
+            >
+              <Database className="w-4 h-4" />
+              <span>{indexingStatus ? 'Indexing...' : 'Index to Algolia'}</span>
+            </button>
+            
+            <button
               onClick={refreshTenders}
               disabled={refreshing}
               className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
@@ -351,7 +428,21 @@ const TenderList: React.FC = () => {
         </div>
 
         {/* Algolia Status */}
-        {!algoliaConfigured && (
+        {algoliaConfigured ? (
+          <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Search className="w-4 h-4 text-green-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-green-900">Algolia Search Ready</p>
+                <p className="text-sm text-green-700">
+                  Advanced search functionality is configured and ready to use.
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
           <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-200">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center flex-shrink-0">

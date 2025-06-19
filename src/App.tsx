@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Header from './components/Header';
 import TenderList from './components/TenderList';
 import TenderDetail from './components/TenderDetail';
+import BookmarksPage from './components/BookmarksPage';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Routes>
             <Route path="/" element={<TenderList />} />
             <Route path="/tender/:ocid" element={<TenderDetail />} />
+            <Route path="/bookmarks" element={<BookmarksPage />} />
           </Routes>
         </main>
       </div>

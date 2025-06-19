@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp, Search, X } from 'lucide-react';
+import { Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp, Search, X } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
@@ -25,7 +25,6 @@ interface TenderData {
 const TenderList: React.FC = () => {
   const [data, setData] = useState<TenderData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLoading, setPageLoading] = useState(false);
@@ -84,15 +83,6 @@ const TenderList: React.FC = () => {
       }
       
       setError(errorMessage);
-    }
-  };
-
-  const refreshTenders = async () => {
-    setRefreshing(true);
-    try {
-      await fetchTendersFromDatabase(currentPage, searchQuery);
-    } finally {
-      setRefreshing(false);
     }
   };
 
@@ -169,8 +159,6 @@ const TenderList: React.FC = () => {
                 <div className="h-3 bg-gray-200 rounded w-48"></div>
               </div>
             </div>
-            
-            <div className="h-10 bg-gray-200 rounded w-32"></div>
           </div>
         </div>
 
@@ -197,11 +185,10 @@ const TenderList: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to load tenders</h3>
           <p className="text-red-600 text-sm mb-6">{error}</p>
           <button
-            onClick={refreshTenders}
-            disabled={refreshing}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
+            onClick={() => fetchTendersFromDatabase(currentPage, searchQuery)}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
           >
-            {refreshing ? 'Retrying...' : 'Try Again'}
+            Try Again
           </button>
         </div>
       </div>
@@ -260,17 +247,6 @@ const TenderList: React.FC = () => {
                 <span>Database updated: {new Date(data.stats.last_updated).toLocaleString()}</span>
               </div>
             )}
-          </div>
-          
-          <div className="flex space-x-3">
-            <button
-              onClick={refreshTenders}
-              disabled={refreshing}
-              className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              <RefreshCw className={`w-4 h-4 text-gray-600 ${refreshing ? 'animate-spin' : ''}`} />
-              <span className="text-gray-700">{refreshing ? 'Refreshing...' : 'Refresh'}</span>
-            </button>
           </div>
         </div>
 

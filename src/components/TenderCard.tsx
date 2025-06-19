@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Building, ExternalLink, Clock, AlertTriangle } from 'lucide-react';
+import BookmarkButton from './BookmarkButton';
+import AuthModal from './AuthModal';
 
 interface TenderCardProps {
   tender: any;
 }
 
 const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-ZA', {
       year: 'numeric',
@@ -23,8 +27,8 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
     return diffDays;
   };
 
-  const daysUntilClose = tender.closeDate 
-    ? getDaysUntilClose(tender.closeDate)
+  const daysUntilClose = tender.closeDate || tender.close_date
+    ? getDaysUntilClose(tender.closeDate || tender.close_date)
     : null;
 
   const getUrgencyConfig = (days: number | null) => {
@@ -37,15 +41,25 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
   const urgencyConfig = getUrgencyConfig(daysUntilClose);
   const UrgencyIcon = urgencyConfig.icon;
 
+  const handleAuthRequired = () => {
+    setShowAuthModal(true);
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+  };
+
   return (
-    <Link to={`/tender/${encodeURIComponent(tender.ocid)}`} className="block group">
+    <>
       <div className="bg-white rounded-lg border border-gray-200 p-5 hover:border-gray-300 hover:shadow-sm transition-all duration-200 h-full flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 text-base leading-snug mb-2">
-              {tender.title || 'Untitled Tender'}
-            </h3>
+            <Link to={`/tender/${encodeURIComponent(tender.ocid)}`} className="group">
+              <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 text-base leading-snug mb-2">
+                {tender.title || 'Untitled Tender'}
+              </h3>
+            </Link>
             {tender.category && (
               <span className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-200">
                 {tender.category}
@@ -53,9 +67,11 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
             )}
           </div>
           <div className="ml-3 flex-shrink-0">
-            <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-              <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
-            </div>
+            <Link to={`/tender/${encodeURIComponent(tender.ocid)}`}>
+              <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
+              </div>
+            </Link>
           </div>
         </div>
 
@@ -79,14 +95,16 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
           )}
 
           {/* Closing Date */}
-          {tender.closeDate && (
+          {(tender.closeDate || tender.close_date) && (
             <div className="flex items-center justify-between">
               <div className="flex items-center text-sm text-gray-600">
                 <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center mr-2 flex-shrink-0">
                   <Calendar className="w-3 h-3 text-gray-500" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">Closes: {formatDate(tender.closeDate)}</p>
+                  <p className="font-medium text-gray-900">
+                    Closes: {formatDate(tender.closeDate || tender.close_date)}
+                  </p>
                 </div>
               </div>
               {daysUntilClose !== null && (
@@ -104,16 +122,28 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
         {/* Footer */}
         <div className="mt-4 pt-3 border-t border-gray-100">
           <div className="flex items-center justify-between">
-            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
-              • Open
-            </span>
-            <span className="text-xs text-gray-400 font-mono">
-              {tender.ocid?.split('-').pop()?.substring(0, 8)}...
-            </span>
+            <div className="flex items-center space-x-2">
+              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
+                • Open
+              </span>
+              <span className="text-xs text-gray-400 font-mono">
+                {tender.ocid?.split('-').pop()?.substring(0, 8)}...
+              </span>
+            </div>
+            <BookmarkButton
+              tenderOcid={tender.ocid}
+              onAuthRequired={handleAuthRequired}
+            />
           </div>
         </div>
       </div>
-    </Link>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
+    </>
   );
 };
 

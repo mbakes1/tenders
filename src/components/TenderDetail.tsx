@@ -16,12 +16,15 @@ import {
 } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import SkeletonDetail from './SkeletonDetail';
+import BookmarkButton from './BookmarkButton';
+import AuthModal from './AuthModal';
 
 const TenderDetail: React.FC = () => {
   const { ocid } = useParams<{ ocid: string }>();
   const [tender, setTender] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
     const fetchTenderDetail = async () => {
@@ -128,6 +131,14 @@ const TenderDetail: React.FC = () => {
     }
   };
 
+  const handleAuthRequired = () => {
+    setShowAuthModal(true);
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+  };
+
   if (loading) {
     return <SkeletonDetail />;
   }
@@ -157,306 +168,321 @@ const TenderDetail: React.FC = () => {
   const daysUntilClose = closeDate ? getDaysUntilClose(closeDate) : null;
 
   return (
-    <div className="space-y-6">
-      {/* Back Navigation */}
-      <Link
-        to="/"
-        className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors font-medium"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Tenders
-      </Link>
+    <>
+      <div className="space-y-6">
+        {/* Back Navigation */}
+        <Link
+          to="/"
+          className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors font-medium"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Tenders
+        </Link>
 
-      {/* Header Section */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex flex-col lg:flex-row lg:items-start justify-between space-y-4 lg:space-y-0">
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 mb-3">
-              {tender.title || 'Untitled Tender'}
-            </h1>
-            
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
-              <span className="font-mono">OCID: {tender.ocid}</span>
-              {tender.bid_number && (
-                <span className="flex items-center">
-                  <Tag className="w-4 h-4 mr-1" />
-                  {tender.bid_number}
+        {/* Header Section */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between space-y-4 lg:space-y-0">
+            <div className="flex-1">
+              <h1 className="text-2xl font-bold text-gray-900 mb-3">
+                {tender.title || 'Untitled Tender'}
+              </h1>
+              
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
+                <span className="font-mono">OCID: {tender.ocid}</span>
+                {tender.bid_number && (
+                  <span className="flex items-center">
+                    <Tag className="w-4 h-4 mr-1" />
+                    {tender.bid_number}
+                  </span>
+                )}
+              </div>
+
+              {tender.category && (
+                <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200 text-sm font-medium">
+                  {tender.category}
                 </span>
               )}
             </div>
 
-            {tender.category && (
-              <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200 text-sm font-medium">
-                {tender.category}
-              </span>
-            )}
-          </div>
-
-          {/* Status and Urgency */}
-          <div className="flex flex-col items-end space-y-2">
-            <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-green-50 text-green-700 border border-green-200">
-              Open
-            </span>
-            
-            {daysUntilClose !== null && (
-              <div className={`flex items-center text-sm font-medium ${
-                daysUntilClose <= 3 ? 'text-red-600' : 
-                daysUntilClose <= 7 ? 'text-amber-600' : 'text-green-600'
-              }`}>
-                <Clock className="w-4 h-4 mr-1" />
-                <span>
-                  {daysUntilClose > 0 ? `${daysUntilClose} days left` : 'Expired'}
+            {/* Status and Actions */}
+            <div className="flex flex-col items-end space-y-3">
+              <div className="flex items-center space-x-3">
+                <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-green-50 text-green-700 border border-green-200">
+                  Open
                 </span>
+                
+                {daysUntilClose !== null && (
+                  <div className={`flex items-center text-sm font-medium ${
+                    daysUntilClose <= 3 ? 'text-red-600' : 
+                    daysUntilClose <= 7 ? 'text-amber-600' : 'text-green-600'
+                  }`}>
+                    <Clock className="w-4 h-4 mr-1" />
+                    <span>
+                      {daysUntilClose > 0 ? `${daysUntilClose} days left` : 'Expired'}
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
+              
+              <BookmarkButton
+                tenderOcid={tender.ocid}
+                onAuthRequired={handleAuthRequired}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Description */}
-          {(tender.description || tender.bid_description) && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Description</h2>
-              <div className="space-y-4">
-                {tender.description && (
-                  <div>
-                    <h3 className="font-medium text-gray-900 mb-2">General Description</h3>
-                    <p className="text-gray-700 whitespace-pre-wrap">{tender.description}</p>
-                  </div>
-                )}
-                {tender.bid_description && tender.bid_description !== tender.description && (
-                  <div>
-                    <h3 className="font-medium text-gray-900 mb-2">Bid Description</h3>
-                    <p className="text-gray-700 whitespace-pre-wrap">{tender.bid_description}</p>
-                  </div>
-                )}
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Description */}
+            {(tender.description || tender.bid_description) && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Description</h2>
+                <div className="space-y-4">
+                  {tender.description && (
+                    <div>
+                      <h3 className="font-medium text-gray-900 mb-2">General Description</h3>
+                      <p className="text-gray-700 whitespace-pre-wrap">{tender.description}</p>
+                    </div>
+                  )}
+                  {tender.bid_description && tender.bid_description !== tender.description && (
+                    <div>
+                      <h3 className="font-medium text-gray-900 mb-2">Bid Description</h3>
+                      <p className="text-gray-700 whitespace-pre-wrap">{tender.bid_description}</p>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Items */}
-          {tenderData?.items && tenderData.items.length > 0 && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Items</h2>
-              <div className="space-y-4">
-                {tenderData.items.map((item: any, index: number) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4">
-                    <h3 className="font-medium text-gray-900">{item.description}</h3>
-                    {item.classification?.description && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Classification: {item.classification.description}
-                      </p>
-                    )}
-                    {item.quantity && (
-                      <p className="text-sm text-gray-600 mt-1">
-                        Quantity: {item.quantity} {item.unit?.name || ''}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Documents */}
-          {(tender.documents || tenderData?.documents) && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Documents</h2>
-              <div className="space-y-3">
-                {(tender.documents || tenderData.documents).map((doc: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center space-x-3">
-                      <FileText className="w-5 h-5 text-gray-400" />
-                      <div>
-                        <p className="font-medium text-gray-900">{doc.title}</p>
-                        {doc.description && (
-                          <p className="text-sm text-gray-600">{doc.description}</p>
-                        )}
-                        <p className="text-xs text-gray-500">
-                          {doc.documentType} • {doc.format}
+            {/* Items */}
+            {tenderData?.items && tenderData.items.length > 0 && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Items</h2>
+                <div className="space-y-4">
+                  {tenderData.items.map((item: any, index: number) => (
+                    <div key={index} className="border border-gray-200 rounded-lg p-4">
+                      <h3 className="font-medium text-gray-900">{item.description}</h3>
+                      {item.classification?.description && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          Classification: {item.classification.description}
                         </p>
-                      </div>
+                      )}
+                      {item.quantity && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          Quantity: {item.quantity} {item.unit?.name || ''}
+                        </p>
+                      )}
                     </div>
-                    {doc.url && (
-                      <div className="flex items-center space-x-2">
-                        <button
-                          onClick={() => downloadDocument(doc)}
-                          className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
-                        >
-                          <Download className="w-3 h-3" />
-                          <span>Download</span>
-                        </button>
-                        <a
-                          href={doc.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center space-x-1 text-gray-600 hover:text-gray-700 transition-colors text-sm"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Original</span>
-                        </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Documents */}
+            {(tender.documents || tenderData?.documents) && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Documents</h2>
+                <div className="space-y-3">
+                  {(tender.documents || tenderData.documents).map((doc: any, index: number) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="w-5 h-5 text-gray-400" />
+                        <div>
+                          <p className="font-medium text-gray-900">{doc.title}</p>
+                          {doc.description && (
+                            <p className="text-sm text-gray-600">{doc.description}</p>
+                          )}
+                          <p className="text-xs text-gray-500">
+                            {doc.documentType} • {doc.format}
+                          </p>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Special Conditions */}
-          {tender.special_conditions && (
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Special Conditions</h2>
-              <p className="text-gray-700 whitespace-pre-wrap">{tender.special_conditions}</p>
-            </div>
-          )}
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Key Information */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Key Information</h2>
-            <div className="space-y-4">
-              {/* Tender Period */}
-              <div className="flex items-start space-x-3">
-                <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-                <div>
-                  <p className="text-sm text-gray-600">Tender Period</p>
-                  {tender.opening_date && (
-                    <p className="text-sm text-gray-900">
-                      From: {formatDate(tender.opening_date)}
-                    </p>
-                  )}
-                  {tender.close_date && (
-                    <p className="text-sm text-gray-900">
-                      Until: {formatDate(tender.close_date)}
-                    </p>
-                  )}
+                      {doc.url && (
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => downloadDocument(doc)}
+                            className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
+                          >
+                            <Download className="w-3 h-3" />
+                            <span>Download</span>
+                          </button>
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-1 text-gray-600 hover:text-gray-700 transition-colors text-sm"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Original</span>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
+            )}
 
-              {/* Submission Method */}
-              {tender.submission_method && (
-                <div className="flex items-center space-x-3">
-                  <FileText className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <p className="text-sm text-gray-600">Submission Method</p>
-                    <p className="font-medium text-gray-900">{tender.submission_method}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Service Location */}
-              {tender.service_location && (
-                <div className="flex items-start space-x-3">
-                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
-                    <p className="text-sm text-gray-600">Service Location</p>
-                    <p className="font-medium text-gray-900">{tender.service_location}</p>
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Special Conditions */}
+            {tender.special_conditions && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Special Conditions</h2>
+                <p className="text-gray-700 whitespace-pre-wrap">{tender.special_conditions}</p>
+              </div>
+            )}
           </div>
 
-          {/* Buyer Information */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Buyer Information</h2>
-            <div className="space-y-3">
-              {tender.buyer && (
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Key Information */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Key Information</h2>
+              <div className="space-y-4">
+                {/* Tender Period */}
                 <div className="flex items-start space-x-3">
-                  <Building className="w-5 h-5 text-gray-400 mt-0.5" />
+                  <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
                   <div>
-                    <p className="font-medium text-gray-900">{tender.buyer}</p>
-                    {tender.department && tender.department !== tender.buyer && (
-                      <p className="text-sm text-gray-600">{tender.department}</p>
+                    <p className="text-sm text-gray-600">Tender Period</p>
+                    {tender.opening_date && (
+                      <p className="text-sm text-gray-900">
+                        From: {formatDate(tender.opening_date)}
+                      </p>
+                    )}
+                    {tender.close_date && (
+                      <p className="text-sm text-gray-900">
+                        Until: {formatDate(tender.close_date)}
+                      </p>
                     )}
                   </div>
                 </div>
-              )}
 
-              {/* Contact Information */}
-              <div className="space-y-2">
-                {tender.contact_person && (
+                {/* Submission Method */}
+                {tender.submission_method && (
                   <div className="flex items-center space-x-3">
-                    <div className="w-5 h-5 flex items-center justify-center">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                    <FileText className="w-5 h-5 text-gray-400" />
+                    <div>
+                      <p className="text-sm text-gray-600">Submission Method</p>
+                      <p className="font-medium text-gray-900">{tender.submission_method}</p>
                     </div>
-                    <span className="text-sm text-gray-900 font-medium">{tender.contact_person}</span>
                   </div>
                 )}
-                
-                {tender.contact_tel && (
-                  <div className="flex items-center space-x-3">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">{tender.contact_tel}</span>
-                  </div>
-                )}
-                
-                {tender.contact_email && (
-                  <div className="flex items-center space-x-3">
-                    <Mail className="w-4 h-4 text-gray-400" />
-                    <a
-                      href={`mailto:${tender.contact_email}`}
-                      className="text-sm text-blue-600 hover:text-blue-700"
-                    >
-                      {tender.contact_email}
-                    </a>
-                  </div>
-                )}
-                
-                {tender.contact_fax && (
-                  <div className="flex items-center space-x-3">
-                    <div className="w-4 h-4 flex items-center justify-center">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+
+                {/* Service Location */}
+                {tender.service_location && (
+                  <div className="flex items-start space-x-3">
+                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <div>
+                      <p className="text-sm text-gray-600">Service Location</p>
+                      <p className="font-medium text-gray-900">{tender.service_location}</p>
                     </div>
-                    <span className="text-sm text-gray-600">Fax: {tender.contact_fax}</span>
                   </div>
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Submission Details */}
-          {(tender.submission_email || tender.file_size_limit || tender.required_format) && (
+            {/* Buyer Information */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Submission Details</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Buyer Information</h2>
               <div className="space-y-3">
-                {tender.submission_email && (
-                  <div>
-                    <p className="text-sm text-gray-600">Submission Email</p>
-                    <a
-                      href={`mailto:${tender.submission_email}`}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      {tender.submission_email}
-                    </a>
+                {tender.buyer && (
+                  <div className="flex items-start space-x-3">
+                    <Building className="w-5 h-5 text-gray-400 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-gray-900">{tender.buyer}</p>
+                      {tender.department && tender.department !== tender.buyer && (
+                        <p className="text-sm text-gray-600">{tender.department}</p>
+                      )}
+                    </div>
                   </div>
                 )}
-                
-                {tender.file_size_limit && (
-                  <div>
-                    <p className="text-sm text-gray-600">File Size Limit</p>
-                    <p className="text-sm text-gray-900 font-medium">{tender.file_size_limit}</p>
-                  </div>
-                )}
-                
-                {tender.required_format && (
-                  <div>
-                    <p className="text-sm text-gray-600">Required Format</p>
-                    <p className="text-sm text-gray-900 font-medium">{tender.required_format}</p>
-                  </div>
-                )}
+
+                {/* Contact Information */}
+                <div className="space-y-2">
+                  {tender.contact_person && (
+                    <div className="flex items-center space-x-3">
+                      <div className="w-5 h-5 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                      </div>
+                      <span className="text-sm text-gray-900 font-medium">{tender.contact_person}</span>
+                    </div>
+                  )}
+                  
+                  {tender.contact_tel && (
+                    <div className="flex items-center space-x-3">
+                      <Phone className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-600">{tender.contact_tel}</span>
+                    </div>
+                  )}
+                  
+                  {tender.contact_email && (
+                    <div className="flex items-center space-x-3">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <a
+                        href={`mailto:${tender.contact_email}`}
+                        className="text-sm text-blue-600 hover:text-blue-700"
+                      >
+                        {tender.contact_email}
+                      </a>
+                    </div>
+                  )}
+                  
+                  {tender.contact_fax && (
+                    <div className="flex items-center space-x-3">
+                      <div className="w-4 h-4 flex items-center justify-center">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                      </div>
+                      <span className="text-sm text-gray-600">Fax: {tender.contact_fax}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
-          )}
+
+            {/* Submission Details */}
+            {(tender.submission_email || tender.file_size_limit || tender.required_format) && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Submission Details</h2>
+                <div className="space-y-3">
+                  {tender.submission_email && (
+                    <div>
+                      <p className="text-sm text-gray-600">Submission Email</p>
+                      <a
+                        href={`mailto:${tender.submission_email}`}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        {tender.submission_email}
+                      </a>
+                    </div>
+                  )}
+                  
+                  {tender.file_size_limit && (
+                    <div>
+                      <p className="text-sm text-gray-600">File Size Limit</p>
+                      <p className="text-sm text-gray-900 font-medium">{tender.file_size_limit}</p>
+                    </div>
+                  )}
+                  
+                  {tender.required_format && (
+                    <div>
+                      <p className="text-sm text-gray-600">Required Format</p>
+                      <p className="text-sm text-gray-900 font-medium">{tender.required_format}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+      />
+    </>
   );
 };
 

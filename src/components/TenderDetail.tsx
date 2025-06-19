@@ -11,9 +11,11 @@ import {
   ExternalLink,
   Clock,
   Tag,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
+import SkeletonDetail from './SkeletonDetail';
 
 const TenderDetail: React.FC = () => {
   const { ocid } = useParams<{ ocid: string }>();
@@ -86,12 +88,48 @@ const TenderDetail: React.FC = () => {
     return diffDays;
   };
 
+  const downloadDocument = async (doc: any) => {
+    try {
+      // Call our document proxy function
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      const response = await fetch(`${supabaseUrl}/functions/v1/download-document`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: doc.url,
+          filename: doc.title || 'document',
+          format: doc.format || 'pdf'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to download document');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `${doc.title || 'document'}.${doc.format || 'pdf'}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download error:', error);
+      // Fallback to original URL if our proxy fails
+      window.open(doc.url, '_blank');
+    }
+  };
+
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <LoadingSpinner />
-      </div>
-    );
+    return <SkeletonDetail />;
   }
 
   if (error || !tender) {
@@ -243,15 +281,24 @@ const TenderDetail: React.FC = () => {
                       </div>
                     </div>
                     {doc.url && (
-                      <a
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 transition-colors"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        <span className="text-sm">View</span>
-                      </a>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => downloadDocument(doc)}
+                          className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                          <Download className="w-3 h-3" />
+                          <span>Download</span>
+                        </button>
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center space-x-1 text-gray-600 hover:text-gray-700 transition-colors text-sm"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          <span>Original</span>
+                        </a>
+                      </div>
                     )}
                   </div>
                 ))}

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCw, Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import TenderCard from './TenderCard';
+import SkeletonCard from './SkeletonCard';
 
 interface TenderData {
   success: boolean;
@@ -27,6 +28,7 @@ const TenderList: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageLoading, setPageLoading] = useState(false);
   const tendersPerPage = 24;
 
   const fetchTendersFromDatabase = async (page = 1) => {
@@ -85,11 +87,11 @@ const TenderList: React.FC = () => {
 
   const goToPage = async (page: number) => {
     setCurrentPage(page);
-    setLoading(true);
+    setPageLoading(true);
     try {
       await fetchTendersFromDatabase(page);
     } finally {
-      setLoading(false);
+      setPageLoading(false);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -112,13 +114,51 @@ const TenderList: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[500px] space-y-4">
-        <LoadingSpinner />
-        <div className="text-center space-y-2">
-          <p className="text-gray-700 font-medium">Loading tender database</p>
-          <p className="text-sm text-gray-500 max-w-md">
-            Retrieving the latest tender information from our database.
-          </p>
+      <div className="space-y-6">
+        {/* Stats Skeleton */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
+                <div>
+                  <div className="h-8 bg-gray-200 rounded w-24 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-32"></div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i}>
+                    <div className="h-6 bg-gray-200 rounded w-16 mb-1"></div>
+                    <div className="h-3 bg-gray-200 rounded w-20"></div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                <div className="h-3 bg-gray-200 rounded w-48"></div>
+              </div>
+            </div>
+            
+            <div className="h-10 bg-gray-200 rounded w-32"></div>
+          </div>
+        </div>
+
+        {/* Pagination Info Skeleton */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 animate-pulse">
+          <div className="flex items-center justify-between">
+            <div className="h-4 bg-gray-200 rounded w-64"></div>
+            <div className="h-4 bg-gray-200 rounded w-24"></div>
+          </div>
+        </div>
+
+        {/* Tenders Grid Skeleton */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }, (_, index) => (
+            <SkeletonCard key={index} />
+          ))}
         </div>
       </div>
     );
@@ -258,13 +298,21 @@ const TenderList: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {data.tenders.map((tender, index) => (
-              <div key={tender.ocid} className="animate-slide-up" style={{ animationDelay: `${index * 25}ms` }}>
-                <TenderCard tender={tender} />
-              </div>
-            ))}
-          </div>
+          {pageLoading ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: tendersPerPage }, (_, index) => (
+                <SkeletonCard key={index} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {data.tenders.map((tender, index) => (
+                <div key={tender.ocid} className="animate-slide-up" style={{ animationDelay: `${index * 25}ms` }}>
+                  <TenderCard tender={tender} />
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Pagination Controls */}
           {data.pagination.totalPages > 1 && (
@@ -272,7 +320,7 @@ const TenderList: React.FC = () => {
               <div className="flex items-center justify-between">
                 <button
                   onClick={goToPrevious}
-                  disabled={currentPage === 1}
+                  disabled={currentPage === 1 || pageLoading}
                   className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -296,7 +344,8 @@ const TenderList: React.FC = () => {
                       <button
                         key={pageNum}
                         onClick={() => goToPage(pageNum)}
-                        className={`px-3 py-2 rounded-md transition-colors font-medium text-sm ${
+                        disabled={pageLoading}
+                        className={`px-3 py-2 rounded-md transition-colors font-medium text-sm disabled:opacity-50 ${
                           currentPage === pageNum
                             ? 'bg-blue-600 text-white'
                             : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
@@ -312,7 +361,8 @@ const TenderList: React.FC = () => {
                       <span className="px-2 text-gray-400">...</span>
                       <button
                         onClick={() => goToPage(data.pagination.totalPages)}
-                        className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm"
+                        disabled={pageLoading}
+                        className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm disabled:opacity-50"
                       >
                         {data.pagination.totalPages}
                       </button>
@@ -322,7 +372,7 @@ const TenderList: React.FC = () => {
 
                 <button
                   onClick={goToNext}
-                  disabled={currentPage === data.pagination.totalPages}
+                  disabled={currentPage === data.pagination.totalPages || pageLoading}
                   className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   <span>Next</span>

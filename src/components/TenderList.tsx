@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp, Download } from 'lucide-react';
+import { RefreshCw, Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import TenderCard from './TenderCard';
 
@@ -25,7 +25,6 @@ const TenderList: React.FC = () => {
   const [data, setData] = useState<TenderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const tendersPerPage = 24;
@@ -72,51 +71,6 @@ const TenderList: React.FC = () => {
       }
       
       setError(errorMessage);
-    }
-  };
-
-  const syncTendersToDatabase = async () => {
-    setSyncing(true);
-    try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Supabase configuration missing.');
-      }
-
-      console.log('Starting tender sync to database...');
-
-      const response = await fetch(`${supabaseUrl}/functions/v1/sync-tenders`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Sync failed: ${errorText || response.statusText}`);
-      }
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Sync operation failed');
-      }
-
-      console.log('Sync completed successfully:', result.stats);
-      
-      // Refresh the tender list after successful sync
-      await fetchTendersFromDatabase(1);
-      setCurrentPage(1);
-      
-    } catch (err) {
-      console.error('Sync error:', err);
-      setError(err instanceof Error ? err.message : 'Sync operation failed');
-    } finally {
-      setSyncing(false);
     }
   };
 
@@ -179,22 +133,13 @@ const TenderList: React.FC = () => {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to load tenders</h3>
           <p className="text-red-600 text-sm mb-6">{error}</p>
-          <div className="space-y-3">
-            <button
-              onClick={refreshTenders}
-              disabled={refreshing}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
-            >
-              {refreshing ? 'Retrying...' : 'Try Again'}
-            </button>
-            <button
-              onClick={syncTendersToDatabase}
-              disabled={syncing}
-              className="w-full px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 transition-colors font-medium"
-            >
-              {syncing ? 'Syncing...' : 'Sync Database'}
-            </button>
-          </div>
+          <button
+            onClick={refreshTenders}
+            disabled={refreshing}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
+          >
+            {refreshing ? 'Retrying...' : 'Try Again'}
+          </button>
         </div>
       </div>
     );
@@ -256,15 +201,6 @@ const TenderList: React.FC = () => {
           
           <div className="flex space-x-3">
             <button
-              onClick={syncTendersToDatabase}
-              disabled={syncing}
-              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-            >
-              <Download className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
-              <span>{syncing ? 'Syncing...' : 'Sync Database'}</span>
-            </button>
-            
-            <button
               onClick={refreshTenders}
               disabled={refreshing}
               className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
@@ -275,22 +211,20 @@ const TenderList: React.FC = () => {
           </div>
         </div>
 
-        {/* Sync Status */}
-        {syncing && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Database className="w-4 h-4 text-blue-600 animate-pulse" />
-              </div>
-              <div>
-                <p className="font-semibold text-blue-900">Syncing Latest Tender Data</p>
-                <p className="text-sm text-blue-700">
-                  Fetching and storing the latest tender information from government sources. This may take a few minutes.
-                </p>
-              </div>
+        {/* Auto-sync Notice */}
+        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Database className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <p className="font-semibold text-blue-900">Automated Data Updates</p>
+              <p className="text-sm text-blue-700">
+                Our database is automatically updated every 6 hours with the latest tender information from government sources.
+              </p>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Pagination Info */}
@@ -318,15 +252,8 @@ const TenderList: React.FC = () => {
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">No open tenders found</h3>
             <p className="text-gray-600 mb-4">
-              No open tenders are currently available in the database.
+              No open tenders are currently available in the database. Our system automatically updates every 6 hours.
             </p>
-            <button
-              onClick={syncTendersToDatabase}
-              disabled={syncing}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-            >
-              {syncing ? 'Syncing...' : 'Sync Database'}
-            </button>
           </div>
         </div>
       ) : (

@@ -472,6 +472,31 @@ const TenderList: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Quick Search Test Section */}
+        {algoliaConfigured && (
+          <div className="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Search className="w-4 h-4 text-purple-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-purple-900">Test Algolia Search</p>
+                  <p className="text-sm text-purple-700">
+                    Click the "Search" button above to test the Algolia search functionality with filters and instant results.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSearchMode(true)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium text-sm"
+              >
+                Try Search
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Pagination Info */}

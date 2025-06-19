@@ -3,6 +3,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Helper function to truncate text to prevent record size issues
+const truncateText = (text: string | null | undefined, maxLength: number): string => {
+  if (!text) {
+    return '';
+  }
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return text.substring(0, maxLength) + '...';
+};
+
 interface AlgoliaRecord {
   objectID: string;
   ocid: string;
@@ -29,27 +40,6 @@ interface AlgoliaRecord {
   updated_at: string;
 }
 
-const createSearchableText = (tender: any): string => {
-  const fields = [
-    tender.title,
-    tender.description,
-    tender.bid_description,
-    tender.category,
-    tender.buyer,
-    tender.department,
-    tender.contact_person,
-    tender.service_location,
-    tender.special_conditions,
-    tender.bid_number,
-    tender.reference_number
-  ];
-  
-  return fields
-    .filter(field => field && typeof field === 'string')
-    .join(' ')
-    .toLowerCase();
-};
-
 const calculateDaysUntilClose = (closeDate: string | null): number => {
   if (!closeDate) return -1;
   
@@ -64,11 +54,36 @@ const calculateDaysUntilClose = (closeDate: string | null): number => {
 const transformTenderToAlgoliaRecord = (tender: any): AlgoliaRecord => {
   const daysUntilClose = calculateDaysUntilClose(tender.close_date);
   
+  const MAX_DESC_LENGTH = 5000; // Max length for description fields
+  const MAX_OTHER_TEXT_LENGTH = 1000; // Max length for other long text fields
+
+  const truncatedDescription = truncateText(tender.description, MAX_DESC_LENGTH);
+  const truncatedBidDescription = truncateText(tender.bid_description, MAX_DESC_LENGTH);
+  const truncatedSpecialConditions = truncateText(tender.special_conditions, MAX_OTHER_TEXT_LENGTH);
+
+  // Create a searchable text string from the truncated fields to stay within limits
+  const searchable_text = [
+    tender.title,
+    truncatedDescription,
+    truncatedBidDescription,
+    tender.category,
+    tender.buyer,
+    tender.department,
+    tender.contact_person,
+    tender.service_location,
+    truncatedSpecialConditions,
+    tender.bid_number,
+    tender.reference_number
+  ]
+  .filter(field => field && typeof field === 'string')
+  .join(' ')
+  .toLowerCase();
+
   return {
     objectID: tender.ocid,
     ocid: tender.ocid,
     title: tender.title || '',
-    description: tender.description || '',
+    description: truncatedDescription, // Use the truncated version
     category: tender.category || '',
     buyer: tender.buyer || '',
     department: tender.department || '',
@@ -79,8 +94,8 @@ const transformTenderToAlgoliaRecord = (tender: any): AlgoliaRecord => {
     contact_email: tender.contact_email || '',
     service_location: tender.service_location || '',
     submission_method: tender.submission_method || '',
-    special_conditions: tender.special_conditions || '',
-    searchable_text: createSearchableText(tender),
+    special_conditions: truncatedSpecialConditions, // Use the truncated version
+    searchable_text: searchable_text, // Use the newly created searchable text
     days_until_close: daysUntilClose,
     is_open: daysUntilClose > 0,
     created_at: tender.created_at || '',

@@ -176,17 +176,9 @@ export const performHealthCheck = async () => {
       };
     }
 
-    // Test data integrity
-    const { data: integrityResults, error: integrityError } = await supabase
-      .rpc('validate_data_integrity');
-
-    if (integrityError) {
-      console.warn('Data integrity check failed:', integrityError);
-    }
-
     // Test statistics function
     const { data: stats, error: statsError } = await supabase
-      .rpc('get_tender_stats_cached');
+      .rpc('get_tender_stats');
 
     if (statsError) {
       console.warn('Statistics function failed:', statsError);
@@ -197,7 +189,6 @@ export const performHealthCheck = async () => {
       message: 'All systems operational',
       checks: {
         connectivity: !connectivityError,
-        dataIntegrity: integrityResults || [],
         statistics: !statsError,
         stats: stats?.[0] || null
       }

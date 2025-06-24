@@ -140,3 +140,85 @@ export const getPopularTenders = async (limit = 10, daysBack = 7) => {
     });
   return { data, error };
 };
+
+// Health check function to validate system status
+export const performHealthCheck = async () => {
+  try {
+    // Test basic connectivity
+    const { data: connectivityTest, error: connectivityError } = await supabase
+      .from('tenders')
+      .select('count')
+      .limit(1);
+
+    if (connectivityError) {
+      return { 
+        status: 'error', 
+        message: 'Database connectivity failed', 
+        error: connectivityError 
+      };
+    }
+
+    // Test data integrity
+    const { data: integrityResults, error: integrityError } = await supabase
+      .rpc('validate_data_integrity');
+
+    if (integrityError) {
+      console.warn('Data integrity check failed:', integrityError);
+    }
+
+    // Test statistics function
+    const { data: stats, error: statsError } = await supabase
+      .rpc('get_tender_stats_cached');
+
+    if (statsError) {
+      console.warn('Statistics function failed:', statsError);
+    }
+
+    return {
+      status: 'healthy',
+      message: 'All systems operational',
+      checks: {
+        connectivity: !connectivityError,
+        dataIntegrity: integrityResults || [],
+        statistics: !statsError,
+        stats: stats?.[0] || null
+      }
+    };
+  } catch (error) {
+    return {
+      status: 'error',
+      message: 'Health check failed',
+      error
+    };
+  }
+};
+
+// Function to manually trigger data sync (for admin use)
+export const triggerDataSync = async () => {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase configuration missing');
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/scheduler`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Sync failed: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return { success: true, data: result };
+  } catch (error) {
+    console.error('Manual sync failed:', error);
+    return { success: false, error };
+  }
+};

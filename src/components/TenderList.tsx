@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp, Search, X } from 'lucide-react';
+import { Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp, Search, X, RefreshCw } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
+import { performHealthCheck, triggerDataSync } from '../lib/supabase';
 
 interface TenderData {
   success: boolean;
@@ -30,6 +31,8 @@ const TenderList: React.FC = () => {
   const [pageLoading, setPageLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
+  const [healthStatus, setHealthStatus] = useState<any>(null);
+  const [syncLoading, setSyncLoading] = useState(false);
   const tendersPerPage = 24;
 
   const fetchTendersFromDatabase = async (page = 1, search = '') => {
@@ -86,6 +89,34 @@ const TenderList: React.FC = () => {
     }
   };
 
+  const checkSystemHealth = async () => {
+    try {
+      const health = await performHealthCheck();
+      setHealthStatus(health);
+    } catch (error) {
+      console.error('Health check failed:', error);
+    }
+  };
+
+  const handleManualSync = async () => {
+    setSyncLoading(true);
+    try {
+      const result = await triggerDataSync();
+      if (result.success) {
+        // Refresh the data after successful sync
+        await fetchTendersFromDatabase(currentPage, searchQuery);
+        alert('Data sync completed successfully!');
+      } else {
+        alert('Data sync failed. Please try again later.');
+      }
+    } catch (error) {
+      console.error('Manual sync error:', error);
+      alert('Data sync failed. Please try again later.');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   const goToPage = async (page: number) => {
     setCurrentPage(page);
     setPageLoading(true);
@@ -127,7 +158,15 @@ const TenderList: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchTendersFromDatabase(1).finally(() => setLoading(false));
+    const initializeApp = async () => {
+      await Promise.all([
+        fetchTendersFromDatabase(1),
+        checkSystemHealth()
+      ]);
+      setLoading(false);
+    };
+
+    initializeApp();
   }, []);
 
   if (loading) {
@@ -184,12 +223,28 @@ const TenderList: React.FC = () => {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to load tenders</h3>
           <p className="text-red-600 text-sm mb-6">{error}</p>
-          <button
-            onClick={() => fetchTendersFromDatabase(currentPage, searchQuery)}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-          >
-            Try Again
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={() => fetchTendersFromDatabase(currentPage, searchQuery)}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+            >
+              Try Again
+            </button>
+            {healthStatus?.status === 'healthy' && (
+              <button
+                onClick={handleManualSync}
+                disabled={syncLoading}
+                className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center space-x-2"
+              >
+                {syncLoading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <RefreshCw className="w-4 h-4" />
+                )}
+                <span>Manual Sync</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -248,20 +303,46 @@ const TenderList: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* System Health Indicator */}
+          {healthStatus && (
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${
+                healthStatus.status === 'healthy' ? 'bg-green-500' : 'bg-red-500'
+              }`}></div>
+              <span className="text-sm text-gray-600">
+                System {healthStatus.status === 'healthy' ? 'Healthy' : 'Issues Detected'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Auto-sync Notice */}
         <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Database className="w-4 h-4 text-blue-600" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Database className="w-4 h-4 text-blue-600" />
+              </div>
+              <div>
+                <p className="font-semibold text-blue-900">Automated Data Updates</p>
+                <p className="text-sm text-blue-700">
+                  Our database is automatically updated every 6 hours with the latest tender information from government sources.
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-semibold text-blue-900">Automated Data Updates</p>
-              <p className="text-sm text-blue-700">
-                Our database is automatically updated every 6 hours with the latest tender information from government sources.
-              </p>
-            </div>
+            <button
+              onClick={handleManualSync}
+              disabled={syncLoading}
+              className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+            >
+              {syncLoading ? (
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              <span>Sync Now</span>
+            </button>
           </div>
         </div>
       </div>

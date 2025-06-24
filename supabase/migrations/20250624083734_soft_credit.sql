@@ -1,22 +1,25 @@
 /*
-  # Database Audit and Cleanup After Cron Job Setup
+  # Database optimization and health checks
 
-  1. Database Health Check
-    - Verify all functions exist and are working
-    - Check for any missing indexes or constraints
-    - Validate RLS policies are complete
+  1. Performance Indexes
+    - Add critical indexes for optimal query performance
+    - Full-text search indexes for better search functionality
+    - Composite indexes for common query patterns
 
-  2. Performance Optimizations
-    - Add missing indexes for better query performance
-    - Optimize search functionality
+  2. Enhanced Functions
+    - Improved search_tenders function with view_count
+    - Cached statistics function for better performance
+    - Data integrity validation function
+    - Helper functions for maintenance
 
   3. Data Integrity
-    - Ensure all foreign key relationships are properly set up
-    - Add any missing constraints
+    - Add constraints to ensure data quality
+    - Cleanup functions for maintenance
+    - Health check functions
 
-  4. Security Review
-    - Verify all RLS policies are comprehensive
-    - Check for any security gaps
+  4. Security
+    - Maintain existing RLS policies
+    - Add users table reference if needed
 */
 
 -- 1. Add missing foreign key constraint for users table (if not exists)
@@ -45,8 +48,8 @@ BEGIN
 END $$;
 
 -- 2. Ensure all critical indexes exist for optimal performance
-CREATE INDEX IF NOT EXISTS idx_tenders_close_date_open ON tenders(close_date) 
-  WHERE close_date > CURRENT_TIMESTAMP;
+-- Fixed: Removed CURRENT_TIMESTAMP from WHERE clause as it's not immutable
+CREATE INDEX IF NOT EXISTS idx_tenders_close_date_open ON tenders(close_date);
 
 CREATE INDEX IF NOT EXISTS idx_tender_views_user_id ON tender_views(user_id) 
   WHERE user_id IS NOT NULL;
@@ -63,7 +66,10 @@ CREATE INDEX IF NOT EXISTS idx_tenders_full_text_search ON tenders
     COALESCE(category, '')
   ));
 
--- 4. Optimize the search_tenders function for better performance
+-- 4. Drop old function definition before creating new one
+DROP FUNCTION IF EXISTS search_tenders(text, integer, integer);
+
+-- 5. Optimize the search_tenders function for better performance
 CREATE OR REPLACE FUNCTION search_tenders(
   search_term text,
   limit_count integer DEFAULT 50,
@@ -121,7 +127,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
--- 5. Add function to get tender statistics with caching consideration
+-- 6. Add function to get tender statistics with caching consideration
 CREATE OR REPLACE FUNCTION get_tender_stats_cached()
 RETURNS TABLE(
   total_tenders bigint,
@@ -144,7 +150,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
--- 6. Add data cleanup function for old view records (optional maintenance)
+-- 7. Add data cleanup function for old view records (optional maintenance)
 CREATE OR REPLACE FUNCTION cleanup_old_view_records()
 RETURNS integer AS $$
 DECLARE
@@ -175,7 +181,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 7. Ensure proper constraints exist
+-- 8. Ensure proper constraints exist
 DO $$
 BEGIN
   -- Add check constraint for view_count to ensure it's never negative
@@ -188,7 +194,7 @@ BEGIN
   END IF;
 END $$;
 
--- 8. Add function to validate data integrity
+-- 9. Add function to validate data integrity
 CREATE OR REPLACE FUNCTION validate_data_integrity()
 RETURNS TABLE(
   check_name text,
@@ -240,3 +246,36 @@ BEGIN
   WHERE schemaname = 'public';
 END;
 $$ LANGUAGE plpgsql;
+
+-- 10. Create a helper function to check if tender is open (immutable alternative)
+CREATE OR REPLACE FUNCTION is_tender_open(close_date timestamptz)
+RETURNS boolean AS $$
+BEGIN
+  RETURN close_date > CURRENT_TIMESTAMP;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
+-- 11. Add additional performance indexes
+CREATE INDEX IF NOT EXISTS idx_tenders_category_close_date ON tenders(category, close_date);
+CREATE INDEX IF NOT EXISTS idx_tenders_buyer_close_date ON tenders(buyer, close_date);
+CREATE INDEX IF NOT EXISTS idx_tender_views_date_range ON tender_views(created_at, tender_ocid);
+
+-- 12. Update existing get_tender_stats function to use the cached version
+DROP FUNCTION IF EXISTS get_tender_stats();
+CREATE OR REPLACE FUNCTION get_tender_stats()
+RETURNS TABLE(
+  total_tenders bigint,
+  open_tenders bigint,
+  closing_soon bigint,
+  last_updated timestamptz
+) AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    s.total_tenders,
+    s.open_tenders,
+    s.closing_soon,
+    s.last_updated
+  FROM get_tender_stats_cached() s;
+END;
+$$ LANGUAGE plpgsql STABLE;

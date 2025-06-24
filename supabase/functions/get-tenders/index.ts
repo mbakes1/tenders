@@ -3,6 +3,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface GetTendersRequest {
+  page?: number;
+  limit?: number;
+  openOnly?: boolean;
+  search?: string;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -18,30 +25,23 @@ Deno.serve(async (req) => {
     const { createClient } = await import('npm:@supabase/supabase-js@2');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Get query parameters
-    const url = new URL(req.url);
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '1000');
-    const openOnly = url.searchParams.get('openOnly') === 'true';
-    const searchQuery = url.searchParams.get('search') || '';
+    // Parse request body to get parameters
+    const requestBody: GetTendersRequest = await req.json();
+    const page = requestBody.page || 1;
+    const limit = requestBody.limit || 1000;
+    const openOnly = requestBody.openOnly !== false; // Default to true
+    const searchQuery = requestBody.search || '';
+    
+    console.log('Request parameters:', { page, limit, openOnly, searchQuery });
     
     // Calculate offset
     const offset = (page - 1) * limit;
     
-    // Build query - include view_count in selection
-    let query = supabase
-      .from('tenders')
-      .select('*, view_count', { count: 'exact' });
-    
-    // Filter for open tenders only if requested
-    if (openOnly) {
-      query = query.gt('close_date', new Date().toISOString());
-    }
-    
-    // Add search functionality if search query is provided
+    // Handle search queries using the search_tenders RPC function
     if (searchQuery.trim()) {
-      // Use the search_tenders function for better performance
-      const { data: searchResults, error: searchError, count } = await supabase
+      console.log(`Performing search for: "${searchQuery}"`);
+      
+      const { data: searchResults, error: searchError } = await supabase
         .rpc('search_tenders', {
           search_term: searchQuery.trim(),
           limit_count: limit,
@@ -50,39 +50,58 @@ Deno.serve(async (req) => {
       
       if (searchError) {
         console.error('Search function error:', searchError);
-        // Fallback to basic text search if the function fails
-        query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,buyer.ilike.%${searchQuery}%,category.ilike.%${searchQuery}%,department.ilike.%${searchQuery}%`);
-      } else {
-        // Return search results directly
-        const { data: stats } = await supabase.rpc('get_tender_stats');
-        
-        const result = {
-          success: true,
-          tenders: searchResults || [],
-          pagination: {
-            page,
-            limit,
-            total: searchResults?.length || 0,
-            totalPages: Math.ceil((searchResults?.length || 0) / limit)
-          },
-          stats: stats?.[0] || {
-            total_tenders: 0,
-            open_tenders: 0,
-            closing_soon: 0,
-            last_updated: null
-          },
-          lastUpdated: new Date().toISOString()
-        };
-        
-        console.log(`Search returned ${searchResults?.length || 0} results for "${searchQuery}"`);
-        
-        return new Response(
-          JSON.stringify(result),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          },
-        );
+        throw new Error(`Search failed: ${searchError.message}`);
       }
+      
+      // Get total count for search results by running the same search without limit
+      const { data: countResults, error: countError } = await supabase
+        .rpc('search_tenders', {
+          search_term: searchQuery.trim(),
+          limit_count: 999999, // Large number to get all results for counting
+          offset_count: 0
+        });
+      
+      const totalSearchResults = countResults?.length || 0;
+      
+      // Get general statistics
+      const { data: stats } = await supabase.rpc('get_tender_stats');
+      
+      const result = {
+        success: true,
+        tenders: searchResults || [],
+        pagination: {
+          page,
+          limit,
+          total: totalSearchResults,
+          totalPages: Math.ceil(totalSearchResults / limit)
+        },
+        stats: stats?.[0] || {
+          total_tenders: 0,
+          open_tenders: 0,
+          closing_soon: 0,
+          last_updated: null
+        },
+        lastUpdated: new Date().toISOString()
+      };
+      
+      console.log(`Search returned ${searchResults?.length || 0} results for "${searchQuery}" (total: ${totalSearchResults})`);
+      
+      return new Response(
+        JSON.stringify(result),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    }
+    
+    // Build standard query for non-search requests
+    let query = supabase
+      .from('tenders')
+      .select('*, view_count', { count: 'exact' });
+    
+    // Filter for open tenders only if requested
+    if (openOnly) {
+      query = query.gt('close_date', new Date().toISOString());
     }
     
     // Order by close date (most urgent first for open tenders)

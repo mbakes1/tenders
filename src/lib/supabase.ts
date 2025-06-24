@@ -36,6 +36,22 @@ export const getCurrentUser = async () => {
   return { user, error };
 };
 
+// Admin helper functions
+export const checkAdminStatus = async () => {
+  const { data, error } = await supabase.rpc('is_admin');
+  return { isAdmin: data || false, error };
+};
+
+export const getAdminStats = async () => {
+  const { data, error } = await supabase.rpc('get_admin_stats');
+  return { data: data?.[0] || null, error };
+};
+
+export const getRecentActivity = async (limit = 10) => {
+  const { data, error } = await supabase.rpc('get_recent_activity', { limit_count: limit });
+  return { data: data || [], error };
+};
+
 // Tender data functions
 export const getTenders = async (page: number, search: string, limit: number) => {
   const { data, error } = await supabase.functions.invoke('get-tenders', {

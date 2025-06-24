@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Bookmark, LogOut, ChevronDown } from 'lucide-react';
-import { signOut } from '../lib/supabase';
-import { supabase } from '../lib/supabase';
+import { User, Bookmark, LogOut, ChevronDown, Shield } from 'lucide-react';
+import { signOut, supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
 
 interface UserMenuProps {
@@ -11,6 +10,8 @@ interface UserMenuProps {
 const UserMenu: React.FC<UserMenuProps> = ({ onSignOut }) => {
   const [user, setUser] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminCheckLoading, setAdminCheckLoading] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -18,14 +19,48 @@ const UserMenu: React.FC<UserMenuProps> = ({ onSignOut }) => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      
+      // Check admin status if user is authenticated
+      if (user) {
+        try {
+          const { data, error } = await supabase.rpc('is_admin');
+          if (!error) {
+            setIsAdmin(data || false);
+          }
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+      setAdminCheckLoading(false);
     };
 
     getUser();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setUser(session?.user || null);
+        
+        if (session?.user) {
+          // Check admin status for new session
+          setAdminCheckLoading(true);
+          try {
+            const { data, error } = await supabase.rpc('is_admin');
+            if (!error) {
+              setIsAdmin(data || false);
+            }
+          } catch (error) {
+            console.error('Error checking admin status:', error);
+            setIsAdmin(false);
+          }
+          setAdminCheckLoading(false);
+        } else {
+          setIsAdmin(false);
+          setAdminCheckLoading(false);
+        }
       }
     );
 
@@ -57,11 +92,20 @@ const UserMenu: React.FC<UserMenuProps> = ({ onSignOut }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center space-x-2 px-3 py-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
       >
-        <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-          <User className="w-4 h-4 text-white" />
+        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+          isAdmin ? 'bg-gradient-to-r from-blue-600 to-purple-600' : 'bg-blue-600'
+        }`}>
+          {isAdmin ? (
+            <Shield className="w-4 h-4 text-white" />
+          ) : (
+            <User className="w-4 h-4 text-white" />
+          )}
         </div>
         <span className="text-sm font-medium hidden sm:block">
           {user.email?.split('@')[0]}
+          {isAdmin && !adminCheckLoading && (
+            <span className="ml-1 text-xs text-purple-600 font-semibold">ADMIN</span>
+          )}
         </span>
         <ChevronDown className="w-4 h-4" />
       </button>
@@ -72,7 +116,22 @@ const UserMenu: React.FC<UserMenuProps> = ({ onSignOut }) => {
             <p className="text-sm font-medium text-gray-900 truncate">
               {user.email}
             </p>
+            {isAdmin && !adminCheckLoading && (
+              <p className="text-xs text-purple-600 font-semibold">Administrator</p>
+            )}
           </div>
+          
+          {/* Admin Dashboard Link - Only show for admins */}
+          {isAdmin && !adminCheckLoading && (
+            <Link
+              to="/admin"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center space-x-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors border-b border-gray-100"
+            >
+              <Shield className="w-4 h-4 text-purple-600" />
+              <span className="font-medium">Admin Dashboard</span>
+            </Link>
+          )}
           
           <Link
             to="/bookmarks"

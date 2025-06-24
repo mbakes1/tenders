@@ -66,6 +66,9 @@ CREATE INDEX IF NOT EXISTS idx_tenders_full_text_search ON tenders
   ));
 
 -- 4. Optimize the search_tenders function for better performance
+-- Drop the old function signature before recreating it to avoid type mismatch errors
+DROP FUNCTION IF EXISTS search_tenders(text, integer, integer);
+
 CREATE OR REPLACE FUNCTION search_tenders(
   search_term text,
   limit_count integer DEFAULT 50,

@@ -3,7 +3,7 @@ import { Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp, Se
 import LoadingSpinner from './LoadingSpinner';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
-import { performHealthCheck, triggerDataSync } from '../lib/supabase';
+import { getTenders, performHealthCheck, triggerDataSync } from '../lib/supabase';
 
 interface TenderData {
   success: boolean;
@@ -37,43 +37,10 @@ const TenderList: React.FC = () => {
 
   const fetchTendersFromDatabase = async (page = 1, search = '') => {
     try {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Supabase configuration missing. Please check your environment variables.');
-      }
-
       console.log(`Fetching tenders from database (page ${page}, search: "${search}")...`);
-
-      const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
-      const response = await fetch(`${supabaseUrl}/functions/v1/get-tenders?page=${page}&limit=${tendersPerPage}&openOnly=true${searchParam}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Response error:', errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
-      }
-
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const responseText = await response.text();
-        console.error('Non-JSON response:', responseText);
-        throw new Error('Server returned non-JSON response. Please check if the edge function is deployed correctly.');
-      }
-
-      const result = await response.json();
       
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to fetch tenders');
-      }
-
+      const result = await getTenders(page, search, tendersPerPage);
+      
       console.log(`Successfully fetched ${result.tenders.length} tenders from database`);
       setData(result);
       setError(null);

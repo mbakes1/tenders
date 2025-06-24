@@ -20,7 +20,7 @@ import LoadingSpinner from './LoadingSpinner';
 import SkeletonDetail from './SkeletonDetail';
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
-import { trackTenderView, getTenderViewStats } from '../lib/supabase';
+import { getTenderByOcid, trackTenderView, getTenderViewStats, downloadDocumentProxy } from '../lib/supabase';
 
 const TenderDetail: React.FC = () => {
   const { ocid } = useParams<{ ocid: string }>();
@@ -38,33 +38,9 @@ const TenderDetail: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        
-        if (!supabaseUrl || !supabaseKey) {
-          throw new Error('Supabase configuration missing');
-        }
-
-        // Query the database directly for the tender using fetch
-        const response = await fetch(`${supabaseUrl}/rest/v1/tenders?ocid=eq.${encodeURIComponent(decodeURIComponent(ocid))}&select=*`, {
-          headers: {
-            'Authorization': `Bearer ${supabaseKey}`,
-            'apikey': supabaseKey,
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Database error: ${response.status} ${response.statusText}`);
-        }
-        
-        const tenderData = await response.json();
-        
-        if (!tenderData || tenderData.length === 0) {
-          throw new Error('Tender not found');
-        }
-        
-        setTender(tenderData[0]);
+        // Fetch tender data using the centralized helper
+        const tenderData = await getTenderByOcid(decodeURIComponent(ocid));
+        setTender(tenderData);
         
         // Track the view
         const viewResult = await trackTenderView(decodeURIComponent(ocid));
@@ -120,28 +96,9 @@ const TenderDetail: React.FC = () => {
 
   const downloadDocument = async (doc: any) => {
     try {
-      // Call our document proxy function
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      // Use the centralized download proxy function
+      const blob = await downloadDocumentProxy(doc);
       
-      const response = await fetch(`${supabaseUrl}/functions/v1/download-document`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          url: doc.url,
-          filename: doc.title || 'document',
-          format: doc.format || 'pdf'
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to download document');
-      }
-
-      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.style.display = 'none';

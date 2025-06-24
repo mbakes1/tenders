@@ -36,6 +36,35 @@ export const getCurrentUser = async () => {
   return { user, error };
 };
 
+// Tender data functions
+export const getTenders = async (page: number, search: string, limit: number) => {
+  const { data, error } = await supabase.functions.invoke('get-tenders', {
+    body: { page, search, limit, openOnly: true },
+  });
+  if (error) throw error;
+  if (!data.success) throw new Error(data.error);
+  return data;
+};
+
+export const getTenderByOcid = async (ocid: string) => {
+  const { data, error } = await supabase
+    .from('tenders')
+    .select('*')
+    .eq('ocid', ocid)
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+export const downloadDocumentProxy = async (doc: { url: string; title: string; format: string }) => {
+  const { data, error } = await supabase.functions.invoke('download-document', {
+    body: { url: doc.url, filename: doc.title, format: doc.format },
+    responseType: 'blob'
+  });
+  if (error) throw error;
+  return data;
+};
+
 // Bookmark helper functions
 export const addBookmark = async (tenderOcid: string) => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -80,14 +109,6 @@ export const getUserBookmarks = async (page = 1, limit = 24) => {
 // View tracking helper functions
 export const trackTenderView = async (tenderOcid: string) => {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('Supabase configuration missing');
-      return { success: false, viewCount: 0 };
-    }
-
     // Get auth token if user is authenticated
     const { data: { session } } = await supabase.auth.getSession();
     const authToken = session?.access_token;
@@ -100,25 +121,22 @@ export const trackTenderView = async (tenderOcid: string) => {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
 
-    const response = await fetch(`${supabaseUrl}/functions/v1/track-view`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
+    const { data, error } = await supabase.functions.invoke('track-view', {
+      body: {
         tenderOcid,
         userAgent: navigator.userAgent
-      })
+      }
     });
 
-    if (!response.ok) {
-      console.error('Failed to track view:', response.status);
+    if (error) {
+      console.error('Failed to track view:', error);
       return { success: false, viewCount: 0 };
     }
 
-    const result = await response.json();
     return {
-      success: result.success,
-      viewCount: result.viewCount,
-      viewRecorded: result.viewRecorded
+      success: data.success,
+      viewCount: data.viewCount,
+      viewRecorded: data.viewRecorded
     };
   } catch (error) {
     console.error('Error tracking view:', error);
@@ -196,27 +214,15 @@ export const performHealthCheck = async () => {
 // Function to manually trigger data sync (for admin use)
 export const triggerDataSync = async () => {
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-    
-    if (!supabaseUrl || !supabaseKey) {
-      throw new Error('Supabase configuration missing');
-    }
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/scheduler`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json',
-      },
+    const { data, error } = await supabase.functions.invoke('scheduler', {
+      method: 'POST'
     });
 
-    if (!response.ok) {
-      throw new Error(`Sync failed: ${response.status}`);
+    if (error) {
+      throw new Error(`Sync failed: ${error.message}`);
     }
 
-    const result = await response.json();
-    return { success: true, data: result };
+    return { success: true, data };
   } catch (error) {
     console.error('Manual sync failed:', error);
     return { success: false, error };

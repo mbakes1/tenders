@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, AlertCircle, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import TenderCard from './TenderCard';
@@ -30,8 +30,34 @@ const TenderList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageLoading, setPageLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const tendersPerPage = 24;
+
+  // Debounce the search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Trigger search when debounced query changes
+  useEffect(() => {
+    if (debouncedSearchQuery !== searchQuery) {
+      // Still typing, don't search yet
+      return;
+    }
+
+    // Reset to page 1 when search query changes
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+
+    // Perform the search
+    performSearch(debouncedSearchQuery, 1);
+  }, [debouncedSearchQuery]);
 
   const fetchTendersFromDatabase = async (page = 1, search = '') => {
     try {
@@ -54,11 +80,20 @@ const TenderList: React.FC = () => {
     }
   };
 
+  const performSearch = async (query: string, page = 1) => {
+    setSearchLoading(true);
+    try {
+      await fetchTendersFromDatabase(page, query);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
   const goToPage = async (page: number) => {
     setCurrentPage(page);
     setPageLoading(true);
     try {
-      await fetchTendersFromDatabase(page, searchQuery);
+      await fetchTendersFromDatabase(page, debouncedSearchQuery);
     } finally {
       setPageLoading(false);
     }
@@ -77,21 +112,20 @@ const TenderList: React.FC = () => {
     }
   };
 
-  const handleSearch = async (query: string) => {
+  const handleSearchInputChange = (query: string) => {
     setSearchQuery(query);
-    setCurrentPage(1);
-    setSearchLoading(true);
-    try {
-      await fetchTendersFromDatabase(1, query);
-    } finally {
-      setSearchLoading(false);
+    // Show loading state immediately when user starts typing
+    if (query.trim() !== debouncedSearchQuery.trim()) {
+      setSearchLoading(true);
     }
   };
 
   const clearSearch = () => {
     setSearchQuery('');
+    setDebouncedSearchQuery('');
     setCurrentPage(1);
-    fetchTendersFromDatabase(1, '');
+    setSearchLoading(true);
+    fetchTendersFromDatabase(1, '').finally(() => setSearchLoading(false));
   };
 
   useEffect(() => {
@@ -129,7 +163,7 @@ const TenderList: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to load tenders</h3>
           <p className="text-red-600 text-sm mb-6">{error}</p>
           <button
-            onClick={() => fetchTendersFromDatabase(currentPage, searchQuery)}
+            onClick={() => fetchTendersFromDatabase(currentPage, debouncedSearchQuery)}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
           >
             Try Again
@@ -150,7 +184,7 @@ const TenderList: React.FC = () => {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => handleSearchInputChange(e.target.value)}
             placeholder="Search tenders by title, description, buyer, category, or department..."
             className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
           />
@@ -162,6 +196,11 @@ const TenderList: React.FC = () => {
               <X className="h-5 w-5 text-gray-400" />
             </button>
           )}
+          {searchLoading && (
+            <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+              <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+          )}
         </div>
         {searchQuery && (
           <div className="mt-2 text-sm text-gray-600">
@@ -170,10 +209,12 @@ const TenderList: React.FC = () => {
                 <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
                 <span>Searching...</span>
               </div>
-            ) : (
+            ) : debouncedSearchQuery ? (
               <span>
-                Showing results for: <span className="font-medium text-gray-900">"{searchQuery}"</span>
+                Showing results for: <span className="font-medium text-gray-900">"{debouncedSearchQuery}"</span>
               </span>
+            ) : (
+              <span className="text-gray-500">Type to search...</span>
             )}
           </div>
         )}
@@ -186,7 +227,7 @@ const TenderList: React.FC = () => {
             <p className="text-sm text-gray-600">
               Showing <span className="text-gray-900 font-medium">{((currentPage - 1) * tendersPerPage) + 1}</span> to{' '}
               <span className="text-gray-900 font-medium">{Math.min(currentPage * tendersPerPage, data.pagination.total)}</span> of{' '}
-              <span className="text-gray-900 font-medium">{data.pagination.total.toLocaleString()}</span> {searchQuery ? 'matching' : 'open'} tenders
+              <span className="text-gray-900 font-medium">{data.pagination.total.toLocaleString()}</span> {debouncedSearchQuery ? 'matching' : 'open'} tenders
             </p>
             <p className="text-sm text-gray-500">
               Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{data.pagination.totalPages}</span>
@@ -200,18 +241,18 @@ const TenderList: React.FC = () => {
         <div className="text-center py-16">
           <div className="bg-white rounded-lg border border-gray-200 p-12 max-w-md mx-auto">
             <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              {searchQuery ? <Search className="w-6 h-6 text-gray-400" /> : <Clock className="w-6 h-6 text-gray-400" />}
+              {debouncedSearchQuery ? <Search className="w-6 h-6 text-gray-400" /> : <Clock className="w-6 h-6 text-gray-400" />}
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {searchQuery ? 'No matching tenders found' : 'No open tenders found'}
+              {debouncedSearchQuery ? 'No matching tenders found' : 'No open tenders found'}
             </h3>
             <p className="text-gray-600 mb-4">
-              {searchQuery 
-                ? `No tenders match your search for "${searchQuery}". Try different keywords or clear the search.`
+              {debouncedSearchQuery 
+                ? `No tenders match your search for "${debouncedSearchQuery}". Try different keywords or clear the search.`
                 : 'No open tenders are currently available. Please check back later for new opportunities.'
               }
             </p>
-            {searchQuery && (
+            {debouncedSearchQuery && (
               <button
                 onClick={clearSearch}
                 className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
@@ -223,7 +264,7 @@ const TenderList: React.FC = () => {
         </div>
       ) : (
         <>
-          {pageLoading || searchLoading ? (
+          {pageLoading ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: tendersPerPage }, (_, index) => (
                 <SkeletonCard key={index} />
@@ -245,7 +286,7 @@ const TenderList: React.FC = () => {
               <div className="flex items-center justify-between">
                 <button
                   onClick={goToPrevious}
-                  disabled={currentPage === 1 || pageLoading || searchLoading}
+                  disabled={currentPage === 1 || pageLoading}
                   className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -269,7 +310,7 @@ const TenderList: React.FC = () => {
                       <button
                         key={pageNum}
                         onClick={() => goToPage(pageNum)}
-                        disabled={pageLoading || searchLoading}
+                        disabled={pageLoading}
                         className={`px-3 py-2 rounded-md transition-colors font-medium text-sm disabled:opacity-50 ${
                           currentPage === pageNum
                             ? 'bg-blue-600 text-white'
@@ -286,7 +327,7 @@ const TenderList: React.FC = () => {
                       <span className="px-2 text-gray-400">...</span>
                       <button
                         onClick={() => goToPage(data.pagination.totalPages)}
-                        disabled={pageLoading || searchLoading}
+                        disabled={pageLoading}
                         className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm disabled:opacity-50"
                       >
                         {data.pagination.totalPages}
@@ -297,7 +338,7 @@ const TenderList: React.FC = () => {
 
                 <button
                   onClick={goToNext}
-                  disabled={currentPage === data.pagination.totalPages || pageLoading || searchLoading}
+                  disabled={currentPage === data.pagination.totalPages || pageLoading}
                   className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                 >
                   <span>Next</span>

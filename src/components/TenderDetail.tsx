@@ -129,7 +129,7 @@ const TenderDetail: React.FC = () => {
 
   if (error || !tender) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 px-4">
         <div className="bg-white border border-red-200 rounded-lg p-6 max-w-md mx-auto">
           <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-6 h-6 text-red-600" />
@@ -154,36 +154,36 @@ const TenderDetail: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Back Navigation */}
         <Link
           to="/"
-          className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors font-medium"
+          className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors font-medium text-sm sm:text-base"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Tenders
         </Link>
 
         {/* Header Section */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex flex-col lg:flex-row lg:items-start justify-between space-y-4 lg:space-y-0">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+          <div className="flex flex-col space-y-4">
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900 mb-3">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 leading-tight">
                 {tender.title || 'Untitled Tender'}
               </h1>
               
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 mb-4">
-                <span className="font-mono">OCID: {tender.ocid}</span>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600 mb-4">
+                <span className="font-mono text-xs sm:text-sm">OCID: {tender.ocid}</span>
                 {tender.bid_number && (
                   <span className="flex items-center">
                     <Tag className="w-4 h-4 mr-1" />
-                    {tender.bid_number}
+                    <span className="text-xs sm:text-sm">{tender.bid_number}</span>
                   </span>
                 )}
                 {viewCount > 0 && (
                   <div className="flex items-center space-x-1 px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200">
                     <Eye className="w-4 h-4" />
-                    <span className="font-medium">{formatViewCount(viewCount)} views</span>
+                    <span className="font-medium text-xs sm:text-sm">{formatViewCount(viewCount)} views</span>
                   </div>
                 )}
               </div>
@@ -204,8 +204,8 @@ const TenderDetail: React.FC = () => {
             </div>
 
             {/* Status and Actions */}
-            <div className="flex flex-col items-end space-y-3">
-              <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-green-50 text-green-700 border border-green-200">
                   Open
                 </span>
@@ -231,24 +231,24 @@ const TenderDetail: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Description */}
             {(tender.description || tender.bid_description) && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Description</h2>
                 <div className="space-y-4">
                   {tender.description && (
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">General Description</h3>
-                      <p className="text-gray-700 whitespace-pre-wrap">{tender.description}</p>
+                      <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{tender.description}</p>
                     </div>
                   )}
                   {tender.bid_description && tender.bid_description !== tender.description && (
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">Bid Description</h3>
-                      <p className="text-gray-700 whitespace-pre-wrap">{tender.bid_description}</p>
+                      <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{tender.bid_description}</p>
                     </div>
                   )}
                 </div>
@@ -257,12 +257,12 @@ const TenderDetail: React.FC = () => {
 
             {/* Items */}
             {tenderData?.items && tenderData.items.length > 0 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Items</h2>
                 <div className="space-y-4">
                   {tenderData.items.map((item: any, index: number) => (
                     <div key={index} className="border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-medium text-gray-900">{item.description}</h3>
+                      <h3 className="font-medium text-gray-900 text-sm sm:text-base">{item.description}</h3>
                       {item.classification?.description && (
                         <p className="text-sm text-gray-600 mt-1">
                           Classification: {item.classification.description}
@@ -281,17 +281,17 @@ const TenderDetail: React.FC = () => {
 
             {/* Documents */}
             {(tender.documents || tenderData?.documents) && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Documents</h2>
                 <div className="space-y-3">
                   {(tender.documents || tenderData.documents).map((doc: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="flex items-center space-x-3">
-                        <FileText className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <p className="font-medium text-gray-900">{doc.title}</p>
+                    <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3 sm:space-y-0">
+                      <div className="flex items-start space-x-3 min-w-0 flex-1">
+                        <FileText className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-gray-900 text-sm sm:text-base truncate">{doc.title}</p>
                           {doc.description && (
-                            <p className="text-sm text-gray-600">{doc.description}</p>
+                            <p className="text-sm text-gray-600 line-clamp-2">{doc.description}</p>
                           )}
                           <p className="text-xs text-gray-500">
                             {doc.documentType} • {doc.format}
@@ -299,7 +299,7 @@ const TenderDetail: React.FC = () => {
                         </div>
                       </div>
                       {doc.url && (
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2 flex-shrink-0">
                           <button
                             onClick={() => downloadDocument(doc)}
                             className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
@@ -326,18 +326,18 @@ const TenderDetail: React.FC = () => {
 
             {/* Special Conditions */}
             {tender.special_conditions && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Special Conditions</h2>
-                <p className="text-gray-700 whitespace-pre-wrap">{tender.special_conditions}</p>
+                <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{tender.special_conditions}</p>
               </div>
             )}
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* View Statistics */}
             {viewStats && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">View Statistics</h2>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -361,13 +361,13 @@ const TenderDetail: React.FC = () => {
             )}
 
             {/* Key Information */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Key Information</h2>
               <div className="space-y-4">
                 {/* Tender Period */}
                 <div className="flex items-start space-x-3">
-                  <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <div>
+                  <Calendar className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm text-gray-600">Tender Period</p>
                     {tender.opening_date && (
                       <p className="text-sm text-gray-900">
@@ -385,10 +385,10 @@ const TenderDetail: React.FC = () => {
                 {/* Submission Method */}
                 {tender.submission_method && (
                   <div className="flex items-center space-x-3">
-                    <FileText className="w-5 h-5 text-gray-400" />
-                    <div>
+                    <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm text-gray-600">Submission Method</p>
-                      <p className="font-medium text-gray-900">{tender.submission_method}</p>
+                      <p className="font-medium text-gray-900 text-sm">{tender.submission_method}</p>
                     </div>
                   </div>
                 )}
@@ -396,10 +396,10 @@ const TenderDetail: React.FC = () => {
                 {/* Service Location */}
                 {tender.service_location && (
                   <div className="flex items-start space-x-3">
-                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
+                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm text-gray-600">Service Location</p>
-                      <p className="font-medium text-gray-900">{tender.service_location}</p>
+                      <p className="font-medium text-gray-900 text-sm">{tender.service_location}</p>
                     </div>
                   </div>
                 )}
@@ -407,14 +407,14 @@ const TenderDetail: React.FC = () => {
             </div>
 
             {/* Buyer Information */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Buyer Information</h2>
               <div className="space-y-3">
                 {tender.buyer && (
                   <div className="flex items-start space-x-3">
-                    <Building className="w-5 h-5 text-gray-400 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-gray-900">{tender.buyer}</p>
+                    <Building className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900 text-sm">{tender.buyer}</p>
                       {tender.department && tender.department !== tender.buyer && (
                         <p className="text-sm text-gray-600">{tender.department}</p>
                       )}
@@ -426,7 +426,7 @@ const TenderDetail: React.FC = () => {
                 <div className="space-y-2">
                   {tender.contact_person && (
                     <div className="flex items-center space-x-3">
-                      <div className="w-5 h-5 flex items-center justify-center">
+                      <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
                         <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                       </div>
                       <span className="text-sm text-gray-900 font-medium">{tender.contact_person}</span>
@@ -435,17 +435,17 @@ const TenderDetail: React.FC = () => {
                   
                   {tender.contact_tel && (
                     <div className="flex items-center space-x-3">
-                      <Phone className="w-4 h-4 text-gray-400" />
+                      <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
                       <span className="text-sm text-gray-600">{tender.contact_tel}</span>
                     </div>
                   )}
                   
                   {tender.contact_email && (
                     <div className="flex items-center space-x-3">
-                      <Mail className="w-4 h-4 text-gray-400" />
+                      <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
                       <a
                         href={`mailto:${tender.contact_email}`}
-                        className="text-sm text-blue-600 hover:text-blue-700"
+                        className="text-sm text-blue-600 hover:text-blue-700 truncate"
                       >
                         {tender.contact_email}
                       </a>
@@ -454,7 +454,7 @@ const TenderDetail: React.FC = () => {
                   
                   {tender.contact_fax && (
                     <div className="flex items-center space-x-3">
-                      <div className="w-4 h-4 flex items-center justify-center">
+                      <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
                         <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
                       </div>
                       <span className="text-sm text-gray-600">Fax: {tender.contact_fax}</span>
@@ -466,7 +466,7 @@ const TenderDetail: React.FC = () => {
 
             {/* Submission Details */}
             {(tender.submission_email || tender.file_size_limit || tender.required_format) && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Submission Details</h2>
                 <div className="space-y-3">
                   {tender.submission_email && (
@@ -474,7 +474,7 @@ const TenderDetail: React.FC = () => {
                       <p className="text-sm text-gray-600">Submission Email</p>
                       <a
                         href={`mailto:${tender.submission_email}`}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium break-all"
                       >
                         {tender.submission_email}
                       </a>

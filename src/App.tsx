@@ -4,6 +4,7 @@ import Header from './components/Header';
 import TenderList from './components/TenderList';
 import TenderDetail from './components/TenderDetail';
 import BookmarksPage from './components/BookmarksPage';
+import ErrorPage from './components/ErrorPage';
 import AdminRoute from './components/admin/AdminRoute';
 
 // Lazy load admin components
@@ -14,7 +15,7 @@ function App() {
     <Router>
       <div className="min-h-screen bg-gray-50">
         <Header />
-        <main className="container mx-auto px-4 py-6 max-w-7xl">
+        <main className="container mx-auto px-4 py-4 sm:py-6 max-w-7xl">
           <Routes>
             <Route path="/" element={<TenderList />} />
             <Route path="/tender/:ocid" element={<TenderDetail />} />
@@ -35,6 +36,9 @@ function App() {
                 } 
               />
             </Route>
+
+            {/* 404 Catch-all */}
+            <Route path="*" element={<ErrorPage type="404" />} />
           </Routes>
         </main>
       </div>

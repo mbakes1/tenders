@@ -62,16 +62,16 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 p-5 hover:border-gray-300 hover:shadow-sm transition-all duration-200 h-full flex flex-col">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 hover:border-gray-300 hover:shadow-sm transition-all duration-200 h-full flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 pr-3">
             <Link to={`/tender/${encodeURIComponent(tender.ocid)}`} className="group">
-              <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 text-base leading-snug mb-2">
+              <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 text-sm sm:text-base leading-snug mb-2">
                 {tender.title || 'Untitled Tender'}
               </h3>
             </Link>
-            <div className="flex items-center space-x-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               {tender.category && (
                 <span className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-200">
                   {tender.category}
@@ -85,7 +85,7 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
               )}
             </div>
           </div>
-          <div className="ml-3 flex-shrink-0">
+          <div className="flex-shrink-0">
             <Link to={`/tender/${encodeURIComponent(tender.ocid)}`}>
               <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center group-hover:bg-blue-100 transition-colors">
                 <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
@@ -106,30 +106,30 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
           {/* Buyer */}
           {tender.buyer && (
             <div className="flex items-center text-sm text-gray-600">
-              <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center mr-2 flex-shrink-0">
+              <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-100 rounded flex items-center justify-center mr-2 flex-shrink-0">
                 <Building className="w-3 h-3 text-gray-500" />
               </div>
-              <span className="truncate font-medium">{tender.buyer}</span>
+              <span className="truncate font-medium text-xs sm:text-sm">{tender.buyer}</span>
             </div>
           )}
 
           {/* Closing Date */}
           {(tender.closeDate || tender.close_date) && (
             <div className="flex items-center justify-between">
-              <div className="flex items-center text-sm text-gray-600">
-                <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center mr-2 flex-shrink-0">
+              <div className="flex items-center text-sm text-gray-600 min-w-0 flex-1">
+                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-100 rounded flex items-center justify-center mr-2 flex-shrink-0">
                   <Calendar className="w-3 h-3 text-gray-500" />
                 </div>
-                <div>
-                  <p className="font-medium text-gray-900">
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-900 text-xs sm:text-sm truncate">
                     Closes: {formatDate(tender.closeDate || tender.close_date)}
                   </p>
                 </div>
               </div>
               {daysUntilClose !== null && (
-                <div className={`flex items-center space-x-1 px-2 py-1 rounded text-xs font-medium border ${urgencyConfig.bg} ${urgencyConfig.color}`}>
+                <div className={`flex items-center space-x-1 px-2 py-1 rounded text-xs font-medium border ml-2 flex-shrink-0 ${urgencyConfig.bg} ${urgencyConfig.color}`}>
                   <UrgencyIcon className="w-3 h-3" />
-                  <span>
+                  <span className="whitespace-nowrap">
                     {daysUntilClose > 0 ? `${daysUntilClose}d left` : 'Expired'}
                   </span>
                 </div>
@@ -141,18 +141,21 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
         {/* Footer */}
         <div className="mt-4 pt-3 border-t border-gray-100">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 min-w-0 flex-1">
               <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">
                 • Open
               </span>
-              <span className="text-xs text-gray-400 font-mono">
+              <span className="text-xs text-gray-400 font-mono truncate">
                 {tender.ocid?.split('-').pop()?.substring(0, 8)}...
               </span>
             </div>
-            <BookmarkButton
-              tenderOcid={tender.ocid}
-              onAuthRequired={handleAuthRequired}
-            />
+            <div className="ml-2 flex-shrink-0">
+              <BookmarkButton
+                tenderOcid={tender.ocid}
+                onAuthRequired={handleAuthRequired}
+                className="text-xs px-2 py-1"
+              />
+            </div>
           </div>
         </div>
       </div>

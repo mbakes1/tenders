@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Home, User } from 'lucide-react';
+import { Building2, Home, User, Menu, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import AuthModal from './AuthModal';
 import UserMenu from './UserMenu';
@@ -8,6 +8,7 @@ import UserMenu from './UserMenu';
 const Header: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   React.useEffect(() => {
     // Get current user
@@ -36,22 +37,31 @@ const Header: React.FC = () => {
     setUser(null);
   };
 
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+  };
+
   return (
     <>
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="container mx-auto px-4 max-w-7xl">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center space-x-3 group">
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-3 group" onClick={closeMobileMenu}>
               <div className="p-2 bg-blue-600 rounded-lg group-hover:bg-blue-700 transition-colors">
                 <Building2 className="w-5 h-5 text-white" />
               </div>
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-lg font-semibold text-gray-900">SA Tenders</h1>
                 <p className="text-xs text-gray-500">Open Contracting Portal</p>
               </div>
+              <div className="sm:hidden">
+                <h1 className="text-base font-semibold text-gray-900">SA Tenders</h1>
+              </div>
             </Link>
             
-            <nav className="flex items-center space-x-4">
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-4">
               <Link 
                 to="/" 
                 className="flex items-center space-x-2 px-3 py-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors text-sm font-medium"
@@ -72,7 +82,61 @@ const Header: React.FC = () => {
                 </button>
               )}
             </nav>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5" />
+              ) : (
+                <Menu className="w-5 h-5" />
+              )}
+            </button>
           </div>
+
+          {/* Mobile Navigation */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-gray-200 py-4 space-y-2">
+              <Link 
+                to="/" 
+                onClick={closeMobileMenu}
+                className="flex items-center space-x-3 px-3 py-3 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors font-medium"
+              >
+                <Home className="w-5 h-5" />
+                <span>Home</span>
+              </Link>
+
+              {user ? (
+                <div className="space-y-2">
+                  <Link
+                    to="/bookmarks"
+                    onClick={closeMobileMenu}
+                    className="flex items-center space-x-3 px-3 py-3 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors font-medium"
+                  >
+                    <User className="w-5 h-5" />
+                    <span>My Bookmarks</span>
+                  </Link>
+                  <div className="px-3 py-2">
+                    <p className="text-sm text-gray-500 mb-2">Signed in as:</p>
+                    <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setShowAuthModal(true);
+                    closeMobileMenu();
+                  }}
+                  className="flex items-center space-x-3 w-full px-3 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <User className="w-5 h-5" />
+                  <span>Sign In</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </header>
 

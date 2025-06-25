@@ -13,6 +13,13 @@
     font-variant-numeric: oldstyle-nums;
     background-color: #fafafa;
   }
+
+  /* Improve touch targets on mobile */
+  @media (max-width: 768px) {
+    button, a, input, select, textarea {
+      min-height: 44px;
+    }
+  }
 }
 
 @layer utilities {
@@ -37,6 +44,40 @@
   .animate-slide-up {
     animation: slideUp 0.2s ease-out;
   }
+
+  /* Mobile-optimized scrollbars */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f7fafc;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #f7fafc;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 3px;
+  }
+
+  /* Improve focus visibility for accessibility */
+  .focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  /* Safe area insets for mobile devices with notches */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 @keyframes fadeIn {
@@ -47,4 +88,43 @@
 @keyframes slideUp {
   from { transform: translateY(8px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 640px) {
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-slide-up,
+    .animate-fade-in {
+      animation: none;
+    }
+  }
+
+  /* Improve text readability on small screens */
+  .text-xs { font-size: 0.75rem; }
+  .text-sm { font-size: 0.875rem; }
+  
+  /* Better spacing for mobile */
+  .space-y-4 > * + * { margin-top: 1rem; }
+  .space-y-6 > * + * { margin-top: 1.5rem; }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .border-gray-200 {
+    border-color: #000;
+  }
+  
+  .text-gray-600 {
+    color: #000;
+  }
+  
+  .bg-gray-50 {
+    background-color: #fff;
+  }
+}
+
+/* Dark mode support (if needed in future) */
+@media (prefers-color-scheme: dark) {
+  /* Dark mode styles would go here */
 }

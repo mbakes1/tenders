@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, AlertCircle, ChevronLeft, ChevronRight, Database, TrendingUp, Search, X, RefreshCw } from 'lucide-react';
+import { Clock, AlertCircle, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
-import { getTenders, performHealthCheck, triggerDataSync } from '../lib/supabase';
+import { getTenders } from '../lib/supabase';
 
 interface TenderData {
   success: boolean;
@@ -31,8 +31,6 @@ const TenderList: React.FC = () => {
   const [pageLoading, setPageLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
-  const [healthStatus, setHealthStatus] = useState<any>(null);
-  const [syncLoading, setSyncLoading] = useState(false);
   const tendersPerPage = 24;
 
   const fetchTendersFromDatabase = async (page = 1, search = '') => {
@@ -53,34 +51,6 @@ const TenderList: React.FC = () => {
       }
       
       setError(errorMessage);
-    }
-  };
-
-  const checkSystemHealth = async () => {
-    try {
-      const health = await performHealthCheck();
-      setHealthStatus(health);
-    } catch (error) {
-      console.error('Health check failed:', error);
-    }
-  };
-
-  const handleManualSync = async () => {
-    setSyncLoading(true);
-    try {
-      const result = await triggerDataSync();
-      if (result.success) {
-        // Refresh the data after successful sync
-        await fetchTendersFromDatabase(currentPage, searchQuery);
-        alert('Data sync completed successfully!');
-      } else {
-        alert('Data sync failed. Please try again later.');
-      }
-    } catch (error) {
-      console.error('Manual sync error:', error);
-      alert('Data sync failed. Please try again later.');
-    } finally {
-      setSyncLoading(false);
     }
   };
 
@@ -126,10 +96,7 @@ const TenderList: React.FC = () => {
 
   useEffect(() => {
     const initializeApp = async () => {
-      await Promise.all([
-        fetchTendersFromDatabase(1),
-        checkSystemHealth()
-      ]);
+      await fetchTendersFromDatabase(1);
       setLoading(false);
     };
 
@@ -139,35 +106,6 @@ const TenderList: React.FC = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        {/* Stats Skeleton */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
-                <div>
-                  <div className="h-8 bg-gray-200 rounded w-24 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-32"></div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i}>
-                    <div className="h-6 bg-gray-200 rounded w-16 mb-1"></div>
-                    <div className="h-3 bg-gray-200 rounded w-20"></div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-gray-200 rounded"></div>
-                <div className="h-3 bg-gray-200 rounded w-48"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Search Box Skeleton */}
         <div className="h-12 bg-gray-200 rounded-lg animate-pulse"></div>
 
@@ -190,28 +128,12 @@ const TenderList: React.FC = () => {
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to load tenders</h3>
           <p className="text-red-600 text-sm mb-6">{error}</p>
-          <div className="space-y-3">
-            <button
-              onClick={() => fetchTendersFromDatabase(currentPage, searchQuery)}
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
-            >
-              Try Again
-            </button>
-            {healthStatus?.status === 'healthy' && (
-              <button
-                onClick={handleManualSync}
-                disabled={syncLoading}
-                className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium disabled:opacity-50 flex items-center justify-center space-x-2"
-              >
-                {syncLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <RefreshCw className="w-4 h-4" />
-                )}
-                <span>Manual Sync</span>
-              </button>
-            )}
-          </div>
+          <button
+            onClick={() => fetchTendersFromDatabase(currentPage, searchQuery)}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -219,101 +141,6 @@ const TenderList: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Stats Section */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between space-y-4 lg:space-y-0">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {data?.stats.open_tenders?.toLocaleString() || '0'}
-                </h2>
-                <p className="text-gray-600 font-medium">Active Opportunities</p>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-              <div>
-                <p className="text-xl font-semibold text-gray-900">
-                  {data?.stats.total_tenders?.toLocaleString() || '0'}
-                </p>
-                <p className="text-sm text-gray-500">Total in Database</p>
-              </div>
-              <div>
-                <p className="text-xl font-semibold text-gray-900">
-                  {data?.stats.closing_soon?.toLocaleString() || '0'}
-                </p>
-                <p className="text-sm text-gray-500">Closing Soon</p>
-              </div>
-              <div>
-                <p className="text-xl font-semibold text-gray-900">
-                  {data?.pagination.totalPages || '0'}
-                </p>
-                <p className="text-sm text-gray-500">Total Pages</p>
-              </div>
-              <div>
-                <p className="text-xl font-semibold text-green-600">
-                  {data?.stats.total_tenders && data?.stats.open_tenders ? 
-                    `${((data.stats.open_tenders / data.stats.total_tenders) * 100).toFixed(1)}%` : '0%'}
-                </p>
-                <p className="text-sm text-gray-500">Open Rate</p>
-              </div>
-            </div>
-
-            {data?.stats.last_updated && (
-              <div className="flex items-center space-x-2 text-sm text-gray-500">
-                <Clock className="w-4 h-4" />
-                <span>Database updated: {new Date(data.stats.last_updated).toLocaleString()}</span>
-              </div>
-            )}
-          </div>
-
-          {/* System Health Indicator */}
-          {healthStatus && (
-            <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${
-                healthStatus.status === 'healthy' ? 'bg-green-500' : 'bg-red-500'
-              }`}></div>
-              <span className="text-sm text-gray-600">
-                System {healthStatus.status === 'healthy' ? 'Healthy' : 'Issues Detected'}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Auto-sync Notice */}
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Database className="w-4 h-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-semibold text-blue-900">Automated Data Updates</p>
-                <p className="text-sm text-blue-700">
-                  Our database is automatically updated every 6 hours with the latest tender information from government sources.
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={handleManualSync}
-              disabled={syncLoading}
-              className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
-            >
-              {syncLoading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
-              <span>Sync Now</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Search Box */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <div className="relative">
@@ -373,7 +200,7 @@ const TenderList: React.FC = () => {
         <div className="text-center py-16">
           <div className="bg-white rounded-lg border border-gray-200 p-12 max-w-md mx-auto">
             <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              {searchQuery ? <Search className="w-6 h-6 text-gray-400" /> : <Database className="w-6 h-6 text-gray-400" />}
+              {searchQuery ? <Search className="w-6 h-6 text-gray-400" /> : <Clock className="w-6 h-6 text-gray-400" />}
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               {searchQuery ? 'No matching tenders found' : 'No open tenders found'}
@@ -381,7 +208,7 @@ const TenderList: React.FC = () => {
             <p className="text-gray-600 mb-4">
               {searchQuery 
                 ? `No tenders match your search for "${searchQuery}". Try different keywords or clear the search.`
-                : 'No open tenders are currently available in the database. Our system automatically updates every 6 hours.'
+                : 'No open tenders are currently available. Please check back later for new opportunities.'
               }
             </p>
             {searchQuery && (

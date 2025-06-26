@@ -38,23 +38,40 @@ const TenderDetail: React.FC = () => {
         setLoading(true);
         setError(null);
         
-        // Fetch tender data using the centralized helper
-        const tenderData = await getTenderByOcid(decodeURIComponent(ocid));
-        setTender(tenderData);
+        const decodedOcid = decodeURIComponent(ocid);
         
-        // Track the view
-        const viewResult = await trackTenderView(decodeURIComponent(ocid));
-        if (viewResult.success) {
+        // Run all independent requests concurrently using Promise.allSettled
+        // This allows us to handle partial failures gracefully
+        const [tenderResult, viewResult, statsResult] = await Promise.allSettled([
+          getTenderByOcid(decodedOcid),
+          trackTenderView(decodedOcid),
+          getTenderViewStats(decodedOcid)
+        ]);
+        
+        // Handle tender data (critical - must succeed)
+        if (tenderResult.status === 'fulfilled') {
+          setTender(tenderResult.value);
+        } else {
+          throw new Error(tenderResult.reason?.message || 'Failed to fetch tender data');
+        }
+        
+        // Handle view tracking (non-critical - can fail silently)
+        if (viewResult.status === 'fulfilled' && viewResult.value.success) {
           // Update the tender's view count in state
           setTender((prev: any) => ({
             ...prev,
-            view_count: viewResult.viewCount
+            view_count: viewResult.value.viewCount
           }));
+        } else {
+          console.warn('View tracking failed:', viewResult.status === 'rejected' ? viewResult.reason : 'Unknown error');
         }
-
-        // Get detailed view stats
-        const { data: stats } = await getTenderViewStats(decodeURIComponent(ocid));
-        setViewStats(stats);
+        
+        // Handle view stats (non-critical - can fail silently)
+        if (statsResult.status === 'fulfilled') {
+          setViewStats(statsResult.value.data);
+        } else {
+          console.warn('View stats failed:', statsResult.status === 'rejected' ? statsResult.reason : 'Unknown error');
+        }
         
       } catch (err) {
         console.error('Error fetching tender detail:', err);

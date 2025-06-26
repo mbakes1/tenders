@@ -9,31 +9,108 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Auth helper functions
+// Auth helper functions with improved error handling
 export const signUp = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-  });
-  return { data, error };
+  try {
+    // Validate inputs
+    if (!email || !email.includes('@')) {
+      throw new Error('Please enter a valid email address');
+    }
+    if (!password || password.length < 6) {
+      throw new Error('Password must be at least 6 characters long');
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+    if (error) {
+      // Provide user-friendly error messages
+      if (error.message.includes('already registered')) {
+        throw new Error('An account with this email already exists. Please sign in instead.');
+      } else if (error.message.includes('invalid email')) {
+        throw new Error('Please enter a valid email address');
+      } else if (error.message.includes('weak password')) {
+        throw new Error('Password is too weak. Please choose a stronger password.');
+      } else {
+        throw new Error(error.message);
+      }
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    return { 
+      data: null, 
+      error: { message: err instanceof Error ? err.message : 'Sign up failed' } 
+    };
+  }
 };
 
 export const signIn = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  return { data, error };
+  try {
+    // Validate inputs
+    if (!email || !email.includes('@')) {
+      throw new Error('Please enter a valid email address');
+    }
+    if (!password) {
+      throw new Error('Please enter your password');
+    }
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+
+    if (error) {
+      // Provide user-friendly error messages
+      if (error.message.includes('Invalid login credentials')) {
+        throw new Error('Invalid email or password. Please check your credentials and try again.');
+      } else if (error.message.includes('Email not confirmed')) {
+        throw new Error('Please check your email and click the confirmation link before signing in.');
+      } else if (error.message.includes('Too many requests')) {
+        throw new Error('Too many sign-in attempts. Please wait a moment and try again.');
+      } else {
+        throw new Error(error.message);
+      }
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    return { 
+      data: null, 
+      error: { message: err instanceof Error ? err.message : 'Sign in failed' } 
+    };
+  }
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  return { error };
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      throw new Error(error.message);
+    }
+    return { error: null };
+  } catch (err) {
+    return { 
+      error: { message: err instanceof Error ? err.message : 'Sign out failed' } 
+    };
+  }
 };
 
 export const getCurrentUser = async () => {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  return { user, error };
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) {
+      throw new Error(error.message);
+    }
+    return { user, error: null };
+  } catch (err) {
+    return { 
+      user: null, 
+      error: { message: err instanceof Error ? err.message : 'Failed to get user' } 
+    };
+  }
 };
 
 // Admin helper functions
@@ -63,12 +140,24 @@ export const getTenders = async (page: number, search: string, limit: number) =>
 };
 
 export const getTenderByOcid = async (ocid: string) => {
+  // Validate OCID
+  if (!ocid || typeof ocid !== 'string' || ocid.trim().length === 0) {
+    throw new Error('Invalid tender reference provided');
+  }
+
   const { data, error } = await supabase
     .from('tenders')
     .select('*')
-    .eq('ocid', ocid)
+    .eq('ocid', ocid.trim())
     .single();
-  if (error) throw error;
+    
+  if (error) {
+    if (error.code === 'PGRST116') {
+      throw new Error('Tender not found');
+    }
+    throw new Error(`Failed to fetch tender: ${error.message}`);
+  }
+  
   return data;
 };
 
@@ -81,50 +170,156 @@ export const downloadDocumentProxy = async (doc: { url: string; title: string; f
   return data;
 };
 
-// Bookmark helper functions
+// Enhanced bookmark helper functions with validation and error handling
 export const addBookmark = async (tenderOcid: string) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { data: null, error: { message: "User is not authenticated." } as any };
+  try {
+    // Validate inputs
+    if (!tenderOcid || typeof tenderOcid !== 'string' || tenderOcid.trim().length === 0) {
+      throw new Error('Invalid tender reference');
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('You must be signed in to bookmark tenders');
+    }
+
+    // Check if tender exists first
+    const { data: tenderExists } = await supabase
+      .from('tenders')
+      .select('ocid')
+      .eq('ocid', tenderOcid.trim())
+      .single();
+
+    if (!tenderExists) {
+      throw new Error('Tender not found');
+    }
+
+    // Check if already bookmarked
+    const { data: existingBookmark } = await supabase
+      .from('bookmarks')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('tender_ocid', tenderOcid.trim())
+      .single();
+
+    if (existingBookmark) {
+      return { data: existingBookmark, error: null }; // Already bookmarked, return success
+    }
+
+    // Add bookmark
+    const { data, error } = await supabase
+      .from('bookmarks')
+      .insert({ 
+        tender_ocid: tenderOcid.trim(), 
+        user_id: user.id 
+      })
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') { // Unique constraint violation
+        return { data: null, error: null }; // Already bookmarked, treat as success
+      }
+      throw new Error(error.message);
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    return { 
+      data: null, 
+      error: { message: err instanceof Error ? err.message : 'Failed to add bookmark' } 
+    };
   }
-  const { data, error } = await supabase
-    .from('bookmarks')
-    .insert({ tender_ocid: tenderOcid, user_id: user.id });
-  return { data, error };
 };
 
 export const removeBookmark = async (tenderOcid: string) => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: { message: "User is not authenticated." } as any };
+  try {
+    // Validate inputs
+    if (!tenderOcid || typeof tenderOcid !== 'string' || tenderOcid.trim().length === 0) {
+      throw new Error('Invalid tender reference');
+    }
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('You must be signed in to manage bookmarks');
+    }
+
+    const { error } = await supabase
+      .from('bookmarks')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('tender_ocid', tenderOcid.trim());
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return { error: null };
+  } catch (err) {
+    return { 
+      error: { message: err instanceof Error ? err.message : 'Failed to remove bookmark' } 
+    };
   }
-  const { error } = await supabase
-    .from('bookmarks')
-    .delete()
-    .eq('user_id', user.id)
-    .eq('tender_ocid', tenderOcid);
-  return { error };
 };
 
 export const checkIfBookmarked = async (tenderOcid: string) => {
-  const { data, error } = await supabase
-    .rpc('is_tender_bookmarked', { tender_ocid_param: tenderOcid });
-  return { isBookmarked: data, error };
+  try {
+    // Validate inputs
+    if (!tenderOcid || typeof tenderOcid !== 'string' || tenderOcid.trim().length === 0) {
+      return { isBookmarked: false, error: null };
+    }
+
+    const { data, error } = await supabase
+      .rpc('is_tender_bookmarked', { tender_ocid_param: tenderOcid.trim() });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return { isBookmarked: data || false, error: null };
+  } catch (err) {
+    return { 
+      isBookmarked: false, 
+      error: { message: err instanceof Error ? err.message : 'Failed to check bookmark status' } 
+    };
+  }
 };
 
 export const getUserBookmarks = async (page = 1, limit = 24) => {
-  const offset = (page - 1) * limit;
-  const { data, error } = await supabase
-    .rpc('get_user_bookmarks', { 
-      limit_count: limit, 
-      offset_count: offset 
-    });
-  return { data, error };
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('You must be signed in to view bookmarks');
+    }
+
+    const offset = (page - 1) * limit;
+    const { data, error } = await supabase
+      .rpc('get_user_bookmarks', { 
+        limit_count: limit, 
+        offset_count: offset 
+      });
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return { data: data || [], error: null };
+  } catch (err) {
+    return { 
+      data: [], 
+      error: { message: err instanceof Error ? err.message : 'Failed to fetch bookmarks' } 
+    };
+  }
 };
 
 // View tracking helper functions
 export const trackTenderView = async (tenderOcid: string) => {
   try {
+    // Validate OCID
+    if (!tenderOcid || typeof tenderOcid !== 'string' || tenderOcid.trim().length === 0) {
+      return { success: false, viewCount: 0 };
+    }
+
     // Get auth token if user is authenticated
     const { data: { session } } = await supabase.auth.getSession();
     const authToken = session?.access_token;
@@ -139,7 +334,7 @@ export const trackTenderView = async (tenderOcid: string) => {
 
     const { data, error } = await supabase.functions.invoke('track-view', {
       body: {
-        tenderOcid,
+        tenderOcid: tenderOcid.trim(),
         userAgent: navigator.userAgent
       }
     });

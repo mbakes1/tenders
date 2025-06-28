@@ -14,7 +14,13 @@ import {
   AlertCircle,
   Download,
   Eye,
-  TrendingUp
+  TrendingUp,
+  User,
+  Globe,
+  Briefcase,
+  Send,
+  FileCheck,
+  Info
 } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import SkeletonDetail from './SkeletonDetail';
@@ -171,7 +177,7 @@ const TenderDetail: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-4 sm:space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Back Navigation */}
         <Link
           to="/"
@@ -181,338 +187,390 @@ const TenderDetail: React.FC = () => {
           Back to Tenders
         </Link>
 
-        {/* Header Section */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-          <div className="flex flex-col space-y-4">
-            <div className="flex-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 leading-tight">
-                {tender.title || 'Untitled Tender'}
-              </h1>
-              
-              <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600 mb-4">
-                <span className="font-mono text-xs sm:text-sm">OCID: {tender.ocid}</span>
-                {tender.bid_number && (
-                  <span className="flex items-center">
-                    <Tag className="w-4 h-4 mr-1" />
-                    <span className="text-xs sm:text-sm">{tender.bid_number}</span>
-                  </span>
-                )}
-                {viewCount > 0 && (
-                  <div className="flex items-center space-x-1 px-2 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200">
-                    <Eye className="w-4 h-4" />
-                    <span className="font-medium text-xs sm:text-sm">{formatViewCount(viewCount)} views</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                {tender.category && (
-                  <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200 text-sm font-medium">
-                    {tender.category}
-                  </span>
-                )}
-                {viewStats && (
-                  <div className="flex items-center space-x-1 px-2 py-1 bg-gray-50 text-gray-600 rounded text-xs">
-                    <TrendingUp className="w-3 h-3" />
-                    <span>{viewStats.views_today} today</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Status and Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
-              <div className="flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-green-50 text-green-700 border border-green-200">
-                  Open
-                </span>
+        {/* Main Content Container */}
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          {/* Header Section */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 p-6 sm:p-8">
+            <div className="flex flex-col space-y-4">
+              {/* Title and Meta */}
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 leading-tight">
+                  {tender.title || 'Untitled Tender'}
+                </h1>
                 
-                {daysUntilClose !== null && (
-                  <div className={`flex items-center text-sm font-medium ${
-                    daysUntilClose <= 3 ? 'text-red-600' : 
-                    daysUntilClose <= 7 ? 'text-amber-600' : 'text-green-600'
-                  }`}>
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span>
-                      {daysUntilClose > 0 ? `${daysUntilClose} days left` : 'Expired'}
-                    </span>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-4">
+                  <div className="flex items-center space-x-1">
+                    <Tag className="w-4 h-4" />
+                    <span className="font-mono">{tender.ocid}</span>
                   </div>
-                )}
+                  {tender.bid_number && (
+                    <div className="flex items-center space-x-1">
+                      <FileCheck className="w-4 h-4" />
+                      <span>{tender.bid_number}</span>
+                    </div>
+                  )}
+                  {viewCount > 0 && (
+                    <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
+                      <Eye className="w-4 h-4" />
+                      <span className="font-medium">{formatViewCount(viewCount)} views</span>
+                    </div>
+                  )}
+                  {viewStats && (
+                    <div className="flex items-center space-x-1 px-2 py-1 bg-gray-100 text-gray-600 rounded-md">
+                      <TrendingUp className="w-4 h-4" />
+                      <span>{viewStats.views_today} today</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Status and Category */}
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                    Open
+                  </span>
+                  
+                  {tender.category && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                      <Briefcase className="w-4 h-4 mr-1" />
+                      {tender.category}
+                    </span>
+                  )}
+                  
+                  {daysUntilClose !== null && (
+                    <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${
+                      daysUntilClose <= 3 ? 'bg-red-100 text-red-800 border-red-200' : 
+                      daysUntilClose <= 7 ? 'bg-amber-100 text-amber-800 border-amber-200' : 
+                      'bg-green-100 text-green-800 border-green-200'
+                    }`}>
+                      <Clock className="w-4 h-4 mr-1" />
+                      {daysUntilClose > 0 ? `${daysUntilClose} days left` : 'Expired'}
+                    </div>
+                  )}
+                </div>
               </div>
               
-              <BookmarkButton
-                tenderOcid={tender.ocid}
-                onAuthRequired={handleAuthRequired}
-              />
+              {/* Action Button */}
+              <div className="flex justify-end">
+                <BookmarkButton
+                  tenderOcid={tender.ocid}
+                  onAuthRequired={handleAuthRequired}
+                  className="px-4 py-2"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
-            {/* Description */}
+          {/* Content Sections */}
+          <div className="p-6 sm:p-8 space-y-8">
+            {/* Description Section */}
             {(tender.description || tender.bid_description) && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Description</h2>
-                <div className="space-y-4">
+              <section>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <Info className="w-5 h-5 mr-2 text-blue-600" />
+                  Description
+                </h2>
+                <div className="prose max-w-none">
                   {tender.description && (
-                    <div>
+                    <div className="mb-4">
                       <h3 className="font-medium text-gray-900 mb-2">General Description</h3>
-                      <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{tender.description}</p>
+                      <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{tender.description}</p>
                     </div>
                   )}
                   {tender.bid_description && tender.bid_description !== tender.description && (
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">Bid Description</h3>
-                      <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{tender.bid_description}</p>
+                      <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{tender.bid_description}</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Key Information Grid */}
+            <section>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                <Calendar className="w-5 h-5 mr-2 text-blue-600" />
+                Key Information
+              </h2>
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Timeline */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-gray-900 border-b border-gray-200 pb-2">Timeline</h3>
+                  {tender.opening_date && (
+                    <div className="flex items-start space-x-3">
+                      <Calendar className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Opens</p>
+                        <p className="text-sm text-gray-600">{formatDate(tender.opening_date)}</p>
+                      </div>
+                    </div>
+                  )}
+                  {tender.close_date && (
+                    <div className="flex items-start space-x-3">
+                      <Clock className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Closes</p>
+                        <p className="text-sm text-gray-600">{formatDate(tender.close_date)}</p>
+                      </div>
+                    </div>
+                  )}
+                  {tender.briefing_date && (
+                    <div className="flex items-start space-x-3">
+                      <User className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          Briefing Session {tender.compulsory_briefing && <span className="text-red-600">(Compulsory)</span>}
+                        </p>
+                        <p className="text-sm text-gray-600">{formatDate(tender.briefing_date)}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Location & Method */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-gray-900 border-b border-gray-200 pb-2">Details</h3>
+                  {tender.service_location && (
+                    <div className="flex items-start space-x-3">
+                      <MapPin className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Service Location</p>
+                        <p className="text-sm text-gray-600">{tender.service_location}</p>
+                      </div>
+                    </div>
+                  )}
+                  {tender.submission_method && (
+                    <div className="flex items-start space-x-3">
+                      <Send className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Submission Method</p>
+                        <p className="text-sm text-gray-600">{tender.submission_method}</p>
+                      </div>
+                    </div>
+                  )}
+                  {tender.required_format && (
+                    <div className="flex items-start space-x-3">
+                      <FileText className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Required Format</p>
+                        <p className="text-sm text-gray-600">{tender.required_format}</p>
+                      </div>
+                    </div>
+                  )}
+                  {tender.file_size_limit && (
+                    <div className="flex items-start space-x-3">
+                      <Globe className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">File Size Limit</p>
+                        <p className="text-sm text-gray-600">{tender.file_size_limit}</p>
+                      </div>
                     </div>
                   )}
                 </div>
               </div>
-            )}
+            </section>
+
+            {/* Buyer Information */}
+            <section>
+              <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                <Building className="w-5 h-5 mr-2 text-blue-600" />
+                Buyer Information
+              </h2>
+              <div className="grid gap-6 md:grid-cols-2">
+                {/* Organization */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-gray-900 border-b border-gray-200 pb-2">Organization</h3>
+                  {tender.buyer && (
+                    <div className="flex items-start space-x-3">
+                      <Building className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Buyer</p>
+                        <p className="text-sm text-gray-600">{tender.buyer}</p>
+                      </div>
+                    </div>
+                  )}
+                  {tender.department && tender.department !== tender.buyer && (
+                    <div className="flex items-start space-x-3">
+                      <Briefcase className="w-5 h-5 text-indigo-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Department</p>
+                        <p className="text-sm text-gray-600">{tender.department}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Contact Information */}
+                <div className="space-y-4">
+                  <h3 className="font-medium text-gray-900 border-b border-gray-200 pb-2">Contact</h3>
+                  {tender.contact_person && (
+                    <div className="flex items-start space-x-3">
+                      <User className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Contact Person</p>
+                        <p className="text-sm text-gray-600">{tender.contact_person}</p>
+                      </div>
+                    </div>
+                  )}
+                  {tender.contact_email && (
+                    <div className="flex items-start space-x-3">
+                      <Mail className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Email</p>
+                        <a
+                          href={`mailto:${tender.contact_email}`}
+                          className="text-sm text-blue-600 hover:text-blue-700 break-all"
+                        >
+                          {tender.contact_email}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {tender.contact_tel && (
+                    <div className="flex items-start space-x-3">
+                      <Phone className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Phone</p>
+                        <p className="text-sm text-gray-600">{tender.contact_tel}</p>
+                      </div>
+                    </div>
+                  )}
+                  {tender.submission_email && (
+                    <div className="flex items-start space-x-3">
+                      <Send className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">Submission Email</p>
+                        <a
+                          href={`mailto:${tender.submission_email}`}
+                          className="text-sm text-blue-600 hover:text-blue-700 break-all"
+                        >
+                          {tender.submission_email}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </section>
 
             {/* Items */}
             {tenderData?.items && tenderData.items.length > 0 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Items</h2>
+              <section>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                  <FileCheck className="w-5 h-5 mr-2 text-blue-600" />
+                  Items & Requirements
+                </h2>
                 <div className="space-y-4">
                   {tenderData.items.map((item: any, index: number) => (
-                    <div key={index} className="border border-gray-200 rounded-lg p-4">
-                      <h3 className="font-medium text-gray-900 text-sm sm:text-base">{item.description}</h3>
-                      {item.classification?.description && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          Classification: {item.classification.description}
-                        </p>
-                      )}
-                      {item.quantity && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          Quantity: {item.quantity} {item.unit?.name || ''}
-                        </p>
-                      )}
+                    <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-gray-300 transition-colors">
+                      <h3 className="font-medium text-gray-900 mb-2">{item.description}</h3>
+                      <div className="grid gap-2 sm:grid-cols-2 text-sm text-gray-600">
+                        {item.classification?.description && (
+                          <div>
+                            <span className="font-medium">Classification:</span> {item.classification.description}
+                          </div>
+                        )}
+                        {item.quantity && (
+                          <div>
+                            <span className="font-medium">Quantity:</span> {item.quantity} {item.unit?.name || ''}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Documents */}
             {(tender.documents || tenderData?.documents) && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Documents</h2>
+              <section>
+                <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                  <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                  Documents
+                </h2>
                 <div className="space-y-3">
                   {(tender.documents || tenderData.documents).map((doc: any, index: number) => (
-                    <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3 sm:space-y-0">
+                    <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-gray-50 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors space-y-3 sm:space-y-0">
                       <div className="flex items-start space-x-3 min-w-0 flex-1">
-                        <FileText className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                        <FileText className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-gray-900 text-sm sm:text-base truncate">{doc.title}</p>
+                          <p className="font-medium text-gray-900 truncate">{doc.title}</p>
                           {doc.description && (
-                            <p className="text-sm text-gray-600 line-clamp-2">{doc.description}</p>
+                            <p className="text-sm text-gray-600 line-clamp-2 mt-1">{doc.description}</p>
                           )}
-                          <p className="text-xs text-gray-500">
-                            {doc.documentType} • {doc.format}
-                          </p>
+                          <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                            <span>{doc.documentType}</span>
+                            <span>{doc.format}</span>
+                          </div>
                         </div>
                       </div>
                       {doc.url && (
                         <div className="flex items-center space-x-2 flex-shrink-0">
                           <button
                             onClick={() => downloadDocument(doc)}
-                            className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
+                            className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
                           >
-                            <Download className="w-3 h-3" />
+                            <Download className="w-4 h-4" />
                             <span>Download</span>
                           </button>
                           <a
                             href={doc.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center space-x-1 text-gray-600 hover:text-gray-700 transition-colors text-sm"
+                            className="flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50 transition-colors text-sm"
                           >
-                            <ExternalLink className="w-3 h-3" />
-                            <span>Original</span>
+                            <ExternalLink className="w-4 h-4" />
+                            <span>View</span>
                           </a>
                         </div>
                       )}
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
             {/* Special Conditions */}
             {tender.special_conditions && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Special Conditions</h2>
-                <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{tender.special_conditions}</p>
-              </div>
+              <section>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <AlertCircle className="w-5 h-5 mr-2 text-amber-600" />
+                  Special Conditions
+                </h2>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{tender.special_conditions}</p>
+                </div>
+              </section>
             )}
-          </div>
 
-          {/* Sidebar */}
-          <div className="space-y-4 sm:space-y-6">
             {/* View Statistics */}
             {viewStats && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">View Statistics</h2>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Total Views</span>
-                    <span className="font-semibold text-gray-900">{formatViewCount(viewStats.total_views)}</span>
+              <section className="border-t border-gray-200 pt-6">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
+                  View Statistics
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{formatViewCount(viewStats.total_views)}</p>
+                    <p className="text-sm text-gray-600">Total Views</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Unique Viewers</span>
-                    <span className="font-semibold text-gray-900">{formatViewCount(viewStats.unique_viewers)}</span>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{formatViewCount(viewStats.unique_viewers)}</p>
+                    <p className="text-sm text-gray-600">Unique Viewers</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">Views Today</span>
-                    <span className="font-semibold text-gray-900">{viewStats.views_today}</span>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{viewStats.views_today}</p>
+                    <p className="text-sm text-gray-600">Today</p>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">This Week</span>
-                    <span className="font-semibold text-gray-900">{viewStats.views_this_week}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Key Information */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Key Information</h2>
-              <div className="space-y-4">
-                {/* Tender Period */}
-                <div className="flex items-start space-x-3">
-                  <Calendar className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-gray-600">Tender Period</p>
-                    {tender.opening_date && (
-                      <p className="text-sm text-gray-900">
-                        From: {formatDate(tender.opening_date)}
-                      </p>
-                    )}
-                    {tender.close_date && (
-                      <p className="text-sm text-gray-900">
-                        Until: {formatDate(tender.close_date)}
-                      </p>
-                    )}
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-gray-900">{viewStats.views_this_week}</p>
+                    <p className="text-sm text-gray-600">This Week</p>
                   </div>
                 </div>
-
-                {/* Submission Method */}
-                {tender.submission_method && (
-                  <div className="flex items-center space-x-3">
-                    <FileText className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-gray-600">Submission Method</p>
-                      <p className="font-medium text-gray-900 text-sm">{tender.submission_method}</p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Service Location */}
-                {tender.service_location && (
-                  <div className="flex items-start space-x-3">
-                    <MapPin className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-gray-600">Service Location</p>
-                      <p className="font-medium text-gray-900 text-sm">{tender.service_location}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Buyer Information */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Buyer Information</h2>
-              <div className="space-y-3">
-                {tender.buyer && (
-                  <div className="flex items-start space-x-3">
-                    <Building className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-900 text-sm">{tender.buyer}</p>
-                      {tender.department && tender.department !== tender.buyer && (
-                        <p className="text-sm text-gray-600">{tender.department}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Contact Information */}
-                <div className="space-y-2">
-                  {tender.contact_person && (
-                    <div className="flex items-center space-x-3">
-                      <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                      </div>
-                      <span className="text-sm text-gray-900 font-medium">{tender.contact_person}</span>
-                    </div>
-                  )}
-                  
-                  {tender.contact_tel && (
-                    <div className="flex items-center space-x-3">
-                      <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <span className="text-sm text-gray-600">{tender.contact_tel}</span>
-                    </div>
-                  )}
-                  
-                  {tender.contact_email && (
-                    <div className="flex items-center space-x-3">
-                      <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <a
-                        href={`mailto:${tender.contact_email}`}
-                        className="text-sm text-blue-600 hover:text-blue-700 truncate"
-                      >
-                        {tender.contact_email}
-                      </a>
-                    </div>
-                  )}
-                  
-                  {tender.contact_fax && (
-                    <div className="flex items-center space-x-3">
-                      <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-                      </div>
-                      <span className="text-sm text-gray-600">Fax: {tender.contact_fax}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Submission Details */}
-            {(tender.submission_email || tender.file_size_limit || tender.required_format) && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Submission Details</h2>
-                <div className="space-y-3">
-                  {tender.submission_email && (
-                    <div>
-                      <p className="text-sm text-gray-600">Submission Email</p>
-                      <a
-                        href={`mailto:${tender.submission_email}`}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium break-all"
-                      >
-                        {tender.submission_email}
-                      </a>
-                    </div>
-                  )}
-                  
-                  {tender.file_size_limit && (
-                    <div>
-                      <p className="text-sm text-gray-600">File Size Limit</p>
-                      <p className="text-sm text-gray-900 font-medium">{tender.file_size_limit}</p>
-                    </div>
-                  )}
-                  
-                  {tender.required_format && (
-                    <div>
-                      <p className="text-sm text-gray-600">Required Format</p>
-                      <p className="text-sm text-gray-900 font-medium">{tender.required_format}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              </section>
             )}
           </div>
         </div>

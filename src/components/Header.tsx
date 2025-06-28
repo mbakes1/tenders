@@ -43,28 +43,33 @@ const Header: React.FC = () => {
 
   return (
     <>
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="flex items-center justify-between h-16">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-fixed safe-area-top">
+        <div className="container mx-auto max-w-7xl">
+          <div className="flex items-center justify-between h-14 sm:h-16 lg:h-18">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-3 group" onClick={closeMobileMenu}>
-              <div className="p-2 bg-blue-600 rounded-lg group-hover:bg-blue-700 transition-colors">
-                <Building2 className="w-5 h-5 text-white" />
+            <Link 
+              to="/" 
+              className="flex items-center space-x-2 sm:space-x-3 group touch-target tap-highlight-none" 
+              onClick={closeMobileMenu}
+            >
+              <div className="p-1.5 sm:p-2 bg-blue-600 rounded-lg group-hover:bg-blue-700 transition-colors gpu-accelerated">
+                <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               </div>
-              <div className="hidden sm:block">
-                <h1 className="text-lg font-semibold text-gray-900">SA Tenders</h1>
-                <p className="text-xs text-gray-500">Open Contracting Portal</p>
-              </div>
-              <div className="sm:hidden">
-                <h1 className="text-base font-semibold text-gray-900">SA Tenders</h1>
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-base lg:text-lg font-semibold text-gray-900 truncate">
+                  SA Tenders
+                </h1>
+                <p className="hidden sm:block text-xs text-gray-500 truncate">
+                  Open Contracting Portal
+                </p>
               </div>
             </Link>
             
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-4">
+            <nav className="hidden md:flex items-center space-x-2 lg:space-x-4">
               <Link 
                 to="/" 
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors text-sm font-medium"
+                className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200 text-sm font-medium touch-target tap-highlight-none"
               >
                 <Home className="w-4 h-4" />
                 <span>Home</span>
@@ -75,7 +80,7 @@ const Header: React.FC = () => {
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 text-sm font-medium touch-target tap-highlight-none"
                 >
                   <User className="w-4 h-4" />
                   <span>Sign In</span>
@@ -86,7 +91,9 @@ const Header: React.FC = () => {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              className="md:hidden p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200 touch-target tap-highlight-none"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? (
                 <X className="w-5 h-5" />
@@ -97,12 +104,18 @@ const Header: React.FC = () => {
           </div>
 
           {/* Mobile Navigation */}
-          {mobileMenuOpen && (
-            <div className="md:hidden border-t border-gray-200 py-4 space-y-2">
+          <div 
+            className={`md:hidden transition-all duration-300 ease-in-out overflow-hidden ${
+              mobileMenuOpen 
+                ? 'max-h-96 opacity-100 pb-4' 
+                : 'max-h-0 opacity-0 pb-0'
+            }`}
+          >
+            <div className="border-t border-gray-200 pt-4 space-y-2">
               <Link 
                 to="/" 
                 onClick={closeMobileMenu}
-                className="flex items-center space-x-3 px-3 py-3 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors font-medium"
+                className="flex items-center space-x-3 px-3 py-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200 font-medium touch-target tap-highlight-none"
               >
                 <Home className="w-5 h-5" />
                 <span>Home</span>
@@ -113,13 +126,13 @@ const Header: React.FC = () => {
                   <Link
                     to="/bookmarks"
                     onClick={closeMobileMenu}
-                    className="flex items-center space-x-3 px-3 py-3 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors font-medium"
+                    className="flex items-center space-x-3 px-3 py-3 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200 font-medium touch-target tap-highlight-none"
                   >
                     <User className="w-5 h-5" />
                     <span>My Bookmarks</span>
                   </Link>
-                  <div className="px-3 py-2">
-                    <p className="text-sm text-gray-500 mb-2">Signed in as:</p>
+                  <div className="px-3 py-2 bg-gray-50 rounded-lg">
+                    <p className="text-xs text-gray-500 mb-1">Signed in as:</p>
                     <p className="text-sm font-medium text-gray-900 truncate">{user.email}</p>
                   </div>
                 </div>
@@ -129,14 +142,14 @@ const Header: React.FC = () => {
                     setShowAuthModal(true);
                     closeMobileMenu();
                   }}
-                  className="flex items-center space-x-3 w-full px-3 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                  className="flex items-center space-x-3 w-full px-3 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 font-medium touch-target tap-highlight-none"
                 >
                   <User className="w-5 h-5" />
                   <span>Sign In</span>
                 </button>
               )}
             </div>
-          )}
+          </div>
         </div>
       </header>
 

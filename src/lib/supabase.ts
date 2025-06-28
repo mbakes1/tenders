@@ -129,51 +129,26 @@ export const getRecentActivity = async (limit = 10) => {
   return { data: data || [], error };
 };
 
-// Tender data functions - Updated to query database directly
+// Tender data functions - Updated to use Edge Function
 export const getTenders = async (page: number, search: string, limit: number) => {
   try {
-    const offset = (page - 1) * limit;
-    
-    let query = supabase
-      .from('tenders')
-      .select('*', { count: 'exact' })
-      .order('close_date', { ascending: true, nullsFirst: false });
-
-    // Apply search filter if provided
-    if (search && search.trim()) {
-      query = query.textSearch('title,description,buyer,department,category', search.trim(), {
-        type: 'websearch',
-        config: 'english'
-      });
-    }
-
-    // Filter for open tenders only (close_date in the future or null)
-    const now = new Date().toISOString();
-    query = query.or(`close_date.gte.${now},close_date.is.null`);
-
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1);
-
-    const { data, error, count } = await query;
+    const { data, error } = await supabase.functions.invoke('get-tenders', {
+      body: {
+        page,
+        search: search.trim(),
+        limit
+      }
+    });
 
     if (error) {
       throw new Error(`Failed to fetch tenders: ${error.message}`);
     }
 
-    const totalPages = Math.ceil((count || 0) / limit);
+    if (!data || !data.success) {
+      throw new Error(data?.error || 'Failed to fetch tenders');
+    }
 
-    return {
-      success: true,
-      data: data || [],
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1
-      }
-    };
+    return data;
   } catch (error) {
     console.error('Error fetching tenders:', error);
     throw error;

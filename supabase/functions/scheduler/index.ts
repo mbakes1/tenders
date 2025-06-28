@@ -3,14 +3,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// This function will run automatically every 6 hours to sync tender data
+// This function runs automatically every 15 minutes for incremental sync
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    console.log('🕐 Automated tender sync started at:', new Date().toISOString());
+    console.log('🕐 Automated incremental tender sync started at:', new Date().toISOString());
     
     // Get Supabase environment variables
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -20,8 +20,8 @@ Deno.serve(async (req) => {
       throw new Error('Missing Supabase configuration');
     }
 
-    // Step 1: Sync tenders from external API to database
-    console.log('📊 Step 1: Syncing tenders to database...');
+    // Step 1: Perform incremental sync (this will automatically determine if full sync is needed)
+    console.log('📊 Step 1: Running intelligent sync (incremental/full as needed)...');
     const syncResponse = await fetch(`${supabaseUrl}/functions/v1/sync-tenders`, {
       method: 'POST',
       headers: {
@@ -41,10 +41,12 @@ Deno.serve(async (req) => {
       throw new Error(`Sync operation failed: ${syncResult.error}`);
     }
 
-    console.log('✅ Database sync completed successfully:', {
+    console.log(`✅ ${syncResult.syncType} sync completed successfully:`, {
       totalFetched: syncResult.stats?.totalFetched || 0,
       openTenders: syncResult.stats?.openTenders || 0,
-      executionTime: syncResult.stats?.executionTimeMs || 0
+      apiCalls: syncResult.stats?.apiCallsMade || 0,
+      executionTime: syncResult.stats?.executionTimeMs || 0,
+      efficiency: syncResult.stats?.efficiency || {}
     });
 
     // Step 2: Index tenders to Algolia (if configured)
@@ -87,15 +89,21 @@ Deno.serve(async (req) => {
       console.log('ℹ️ Algolia not configured, skipping search indexing');
     }
 
-    // Return success response
+    // Return success response with enhanced metrics
     return new Response(
       JSON.stringify({
         success: true,
-        message: 'Automated tender sync completed successfully',
+        message: `Automated ${syncResult.syncType} sync completed successfully`,
         timestamp: new Date().toISOString(),
+        syncType: syncResult.syncType,
         stats: {
           database: syncResult.stats,
           algolia: algoliaResult?.stats || null
+        },
+        performance: {
+          totalExecutionTime: Date.now() - new Date().getTime(),
+          apiEfficiency: syncResult.stats?.efficiency || {},
+          syncFrequency: syncResult.syncType === 'incremental' ? 'every 15 minutes' : 'weekly'
         }
       }),
       {
@@ -111,7 +119,8 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: false,
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        syncType: 'unknown'
       }),
       {
         status: 500,

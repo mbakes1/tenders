@@ -38,15 +38,6 @@ interface TenderRelease {
   contracts?: any[];
 }
 
-const isOpenTender = (release: TenderRelease): boolean => {
-  if (!release.tender?.tenderPeriod?.endDate) return false;
-  
-  const endDate = new Date(release.tender.tenderPeriod.endDate);
-  const now = new Date();
-  
-  return endDate > now;
-};
-
 const fetchTendersFromAPI = async (dateFrom: string, dateTo: string, pageNumber = 1, pageSize = 1000) => {
   const url = new URL('https://ocds-api.etenders.gov.za/api/OCDSReleases');
   url.searchParams.append('dateFrom', dateFrom);
@@ -116,13 +107,14 @@ const upsertTenderToDatabase = async (supabaseClient: any, tender: TenderRelease
   }
 };
 
+// This function performs a comprehensive full re-sync (manual trigger only)
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    console.log('Starting intelligent tender sync...');
+    console.log('Starting FULL RE-SYNC of all tender data...');
     
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -131,66 +123,30 @@ Deno.serve(async (req) => {
     const { createClient } = await import('npm:@supabase/supabase-js@2');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Check if we should do a full sync or incremental sync
-    const { data: shouldFullSync, error: fullSyncCheckError } = await supabase
-      .rpc('should_do_full_sync');
+    // Full re-sync: maximum date range for complete data recovery
+    const now = new Date();
+    const dateFrom = new Date(now.getTime() - 1095 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 3 years back
+    const dateTo = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 1 year forward
     
-    if (fullSyncCheckError) {
-      console.error('Error checking full sync requirement:', fullSyncCheckError);
-    }
-    
-    const syncType = shouldFullSync ? 'full' : 'incremental';
-    console.log(`Performing ${syncType} sync...`);
-    
-    let dateFrom: string;
-    let dateTo: string;
-    let maxPages: number;
-    let maxExecutionTime: number;
-    
-    if (syncType === 'full') {
-      // Full sync: comprehensive date range
-      const now = new Date();
-      dateFrom = new Date(now.getTime() - 730 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 2 years back
-      dateTo = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 1 year forward
-      maxPages = 1000;
-      maxExecutionTime = 110000; // 110 seconds
-      console.log(`Full sync: ${dateFrom} to ${dateTo}`);
-    } else {
-      // Incremental sync: only recent changes
-      const { data: lastSyncTimestamp, error: lastSyncError } = await supabase
-        .rpc('get_last_sync_timestamp');
-      
-      if (lastSyncError) {
-        console.error('Error getting last sync timestamp:', lastSyncError);
-        throw new Error('Failed to get last sync timestamp');
-      }
-      
-      const lastSync = new Date(lastSyncTimestamp);
-      const now = new Date();
-      
-      // Incremental sync from last sync time to 1 year in future
-      dateFrom = lastSync.toISOString().split('T')[0];
-      dateTo = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      maxPages = 50; // Much smaller for incremental
-      maxExecutionTime = 30000; // 30 seconds
-      console.log(`Incremental sync: ${dateFrom} to ${dateTo} (since last sync: ${lastSyncTimestamp})`);
-    }
+    console.log(`Full re-sync date range: ${dateFrom} to ${dateTo}`);
     
     let allTenders: TenderRelease[] = [];
     let pageNumber = 1;
     let hasMoreData = true;
     let consecutiveEmptyPages = 0;
     let apiCallsMade = 0;
-    const maxConsecutiveEmpty = syncType === 'full' ? 10 : 5;
+    const maxConsecutiveEmpty = 15;
+    const maxPages = 2000; // Higher limit for full re-sync
     const pageSize = 1000;
     
     // Track performance
     const startTime = Date.now();
+    const maxExecutionTime = 180000; // 3 minutes for full re-sync
     
-    // Fetch tender data with appropriate limits based on sync type
+    // Fetch all tender data
     while (hasMoreData && pageNumber <= maxPages && consecutiveEmptyPages < maxConsecutiveEmpty) {
       if (Date.now() - startTime > maxExecutionTime) {
-        console.log(`Approaching execution time limit (${maxExecutionTime}ms), stopping fetch`);
+        console.log('Approaching execution time limit, stopping fetch');
         break;
       }
       
@@ -215,10 +171,9 @@ Deno.serve(async (req) => {
         
         pageNumber++;
         
-        // Smaller delay for incremental sync
-        const delay = syncType === 'full' ? 50 : 25;
+        // Small delay to prevent overwhelming the API
         if (hasMoreData && pageNumber <= maxPages) {
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
         
       } catch (error) {
@@ -226,8 +181,7 @@ Deno.serve(async (req) => {
         consecutiveEmptyPages++;
         pageNumber++;
         
-        const maxErrors = syncType === 'full' ? 15 : 5;
-        if (consecutiveEmptyPages >= maxErrors) {
+        if (consecutiveEmptyPages >= 20) {
           console.log('Too many consecutive errors, stopping fetch');
           break;
         }
@@ -242,8 +196,8 @@ Deno.serve(async (req) => {
     let successCount = 0;
     let errorCount = 0;
     
-    // Process in batches for better performance
-    const batchSize = syncType === 'full' ? 50 : 25;
+    // Process in larger batches for full re-sync
+    const batchSize = 100;
     for (let i = 0; i < allTenders.length; i += batchSize) {
       const batch = allTenders.slice(i, i + batchSize);
       
@@ -256,7 +210,7 @@ Deno.serve(async (req) => {
       console.log(`Processed batch ${Math.floor(i/batchSize) + 1}: ${successCount} success, ${errorCount} errors`);
       
       // Small delay between batches
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
     
     // Count open tenders from database
@@ -267,10 +221,10 @@ Deno.serve(async (req) => {
     
     const openTendersCount = openTendersData?.length || 0;
     
-    // Log the sync operation using the new function
+    // Log the full re-sync operation
     const { data: logId, error: logError } = await supabase
       .rpc('update_sync_timestamp', {
-        p_sync_type: syncType,
+        p_sync_type: 'full_resync',
         p_total_fetched: allTenders.length,
         p_open_tenders: openTendersCount,
         p_pages_processed: pageNumber - 1,
@@ -283,13 +237,13 @@ Deno.serve(async (req) => {
     if (logError) {
       console.error('Error logging sync operation:', logError);
     } else {
-      console.log('Sync operation logged with ID:', logId);
+      console.log('Full re-sync operation logged with ID:', logId);
     }
     
     const result = {
       success: true,
-      message: `${syncType} sync completed successfully`,
-      syncType,
+      message: 'Full re-sync completed successfully',
+      syncType: 'full_resync',
       stats: {
         totalFetched: allTenders.length,
         openTenders: openTendersCount,
@@ -306,7 +260,7 @@ Deno.serve(async (req) => {
       }
     };
     
-    console.log(`${syncType} sync completed: ${successCount} tenders stored, ${errorCount} errors, ${apiCallsMade} API calls`);
+    console.log(`Full re-sync completed: ${successCount} tenders stored, ${errorCount} errors, ${apiCallsMade} API calls`);
     
     return new Response(
       JSON.stringify(result),
@@ -315,12 +269,12 @@ Deno.serve(async (req) => {
       },
     )
   } catch (error) {
-    console.error('Critical error in sync-tenders function:', error);
+    console.error('Critical error in full-resync-tenders function:', error);
     return new Response(
       JSON.stringify({ 
         success: false,
         error: error.message,
-        syncType: 'unknown',
+        syncType: 'full_resync',
         stats: {
           totalFetched: 0,
           openTenders: 0,

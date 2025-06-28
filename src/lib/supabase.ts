@@ -336,18 +336,6 @@ export const trackTenderView = async (tenderOcid: string) => {
       return { success: false, viewCount: 0 };
     }
 
-    // Get auth token if user is authenticated
-    const { data: { session } } = await supabase.auth.getSession();
-    const authToken = session?.access_token;
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (authToken) {
-      headers['Authorization'] = `Bearer ${authToken}`;
-    }
-
     const { data, error } = await supabase.functions.invoke('track-view', {
       body: {
         tenderOcid: tenderOcid.trim(),
@@ -429,7 +417,7 @@ export const performHealthCheck = async () => {
   }
 };
 
-// Function to manually trigger data sync (for admin use)
+// Function to manually trigger incremental sync (for admin use)
 export const triggerDataSync = async () => {
   try {
     const { data, error } = await supabase.functions.invoke('scheduler', {
@@ -444,5 +432,41 @@ export const triggerDataSync = async () => {
   } catch (error) {
     console.error('Manual sync failed:', error);
     return { success: false, error };
+  }
+};
+
+// Function to manually trigger full re-sync (for admin use)
+export const triggerFullResync = async () => {
+  try {
+    const { data, error } = await supabase.functions.invoke('full-resync-tenders', {
+      method: 'POST'
+    });
+
+    if (error) {
+      throw new Error(`Full re-sync failed: ${error.message}`);
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Manual full re-sync failed:', error);
+    return { success: false, error };
+  }
+};
+
+// Function to get sync statistics (for admin monitoring)
+export const getSyncStatistics = async () => {
+  try {
+    const { data, error } = await supabase.rpc('get_sync_statistics');
+    
+    if (error) {
+      throw new Error(`Failed to get sync statistics: ${error.message}`);
+    }
+
+    return { data: data?.[0] || null, error: null };
+  } catch (err) {
+    return { 
+      data: null, 
+      error: { message: err instanceof Error ? err.message : 'Failed to get sync statistics' } 
+    };
   }
 };

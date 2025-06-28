@@ -33,19 +33,8 @@ Deno.serve(async (req) => {
                     req.headers.get('x-real-ip') || 
                     'unknown';
     
-    // Get user ID if authenticated
-    const authHeader = req.headers.get('authorization');
-    let userId = null;
-    
-    if (authHeader) {
-      try {
-        const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-        userId = user?.id || null;
-      } catch (error) {
-        // User not authenticated, continue without user ID
-        console.log('User not authenticated:', error);
-      }
-    }
+    // User ID is set to null for now (server-side JWT verification needed for proper user tracking)
+    const userId = null;
     
     console.log(`Tracking view for tender ${tenderOcid} from IP ${clientIP}`);
     

@@ -74,13 +74,16 @@ const TenderDetail: React.FC = () => {
     return diffDays;
   };
 
-  const formatViewCount = (count: number) => {
-    if (count >= 1000000) {
-      return `${(count / 1000000).toFixed(1)}M`;
-    } else if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}K`;
+  const formatViewCount = (count: number | null | undefined) => {
+    // Ensure count is a valid number, default to 0 if not
+    const validCount = typeof count === 'number' ? count : 0;
+    
+    if (validCount >= 1000000) {
+      return `${(validCount / 1000000).toFixed(1)}M`;
+    } else if (validCount >= 1000) {
+      return `${(validCount / 1000).toFixed(1)}K`;
     }
-    return count.toString();
+    return validCount.toString();
   };
 
   const downloadDocument = async (doc: any) => {

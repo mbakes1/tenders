@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { 
   Shield, 
   Database, 
@@ -13,73 +13,49 @@ import {
   AlertTriangle,
   Server
 } from 'lucide-react';
-import { supabase, performHealthCheck, triggerDataSync } from '../../lib/supabase';
-
-interface AdminStats {
-  total_users: number;
-  total_tenders: number;
-  open_tenders: number;
-  total_views: number;
-  total_bookmarks: number;
-  last_sync: string;
-  system_health: string;
-}
-
-interface RecentActivity {
-  activity_type: string;
-  description: string;
-  created_at: string;
-  details: any;
-}
+import { useAdminStats, useRecentActivity } from '../../lib/queries';
+import { performHealthCheck, triggerDataSync } from '../../lib/supabase';
 
 const AdminDashboard: React.FC = () => {
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
-  const [healthStatus, setHealthStatus] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [healthStatus, setHealthStatus] = React.useState<any>(null);
+  const [syncing, setSyncing] = React.useState(false);
 
-  const fetchAdminData = async () => {
-    try {
-      setError(null);
-      
-      // Fetch admin statistics
-      const { data: adminStats, error: statsError } = await supabase
-        .rpc('get_admin_stats');
-      
-      if (statsError) {
-        throw new Error(`Failed to fetch admin stats: ${statsError.message}`);
-      }
-      
-      setStats(adminStats?.[0] || null);
+  // Use TanStack Query for data fetching
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+    error: statsErrorMessage,
+    refetch: refetchStats
+  } = useAdminStats();
 
-      // Fetch recent activity
-      const { data: activity, error: activityError } = await supabase
-        .rpc('get_recent_activity', { limit_count: 10 });
-      
-      if (activityError) {
-        console.warn('Failed to fetch recent activity:', activityError);
-        setRecentActivity([]);
-      } else {
-        setRecentActivity(activity || []);
-      }
+  const {
+    data: recentActivity = [],
+    isLoading: activityLoading,
+    refetch: refetchActivity
+  } = useRecentActivity(10);
 
-      // Perform health check
+  const loading = statsLoading || activityLoading;
+  const error = statsError ? (statsErrorMessage instanceof Error ? statsErrorMessage.message : 'Failed to load admin data') : null;
+
+  // Perform health check on mount
+  React.useEffect(() => {
+    const checkHealth = async () => {
       const health = await performHealthCheck();
       setHealthStatus(health);
-
-    } catch (err) {
-      console.error('Error fetching admin data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load admin data');
-    }
-  };
+    };
+    checkHealth();
+  }, []);
 
   const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchAdminData();
-    setRefreshing(false);
+    await Promise.all([
+      refetchStats(),
+      refetchActivity()
+    ]);
+    
+    // Refresh health check
+    const health = await performHealthCheck();
+    setHealthStatus(health);
   };
 
   const handleManualSync = async () => {
@@ -88,7 +64,7 @@ const AdminDashboard: React.FC = () => {
       const result = await triggerDataSync();
       if (result.success) {
         alert('Data sync completed successfully!');
-        await fetchAdminData(); // Refresh data after sync
+        await handleRefresh(); // Refresh data after sync
       } else {
         alert('Data sync failed. Please check the logs.');
       }
@@ -113,10 +89,6 @@ const AdminDashboard: React.FC = () => {
   const formatNumber = (num: number) => {
     return num.toLocaleString();
   };
-
-  useEffect(() => {
-    fetchAdminData().finally(() => setLoading(false));
-  }, []);
 
   if (loading) {
     return (
@@ -184,10 +156,9 @@ const AdminDashboard: React.FC = () => {
           <div className="flex items-center space-x-3">
             <button
               onClick={handleRefresh}
-              disabled={refreshing}
-              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
             >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              <RefreshCw className="w-4 h-4" />
               <span>Refresh</span>
             </button>
             

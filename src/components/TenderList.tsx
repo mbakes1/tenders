@@ -1,143 +1,76 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, AlertCircle, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
-import LoadingSpinner from './LoadingSpinner';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
-import { getTenders } from '../lib/supabase';
-
-interface TenderData {
-  success: boolean;
-  tenders: any[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-  stats: {
-    total_tenders: number;
-    open_tenders: number;
-    closing_soon: number;
-    last_updated: string;
-  };
-  lastUpdated: string;
-}
+import ErrorPage from './ErrorPage';
+import { useTenders } from '../lib/queries';
 
 const TenderList: React.FC = () => {
-  const [data, setData] = useState<TenderData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageLoading, setPageLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
-  const [searchLoading, setSearchLoading] = useState(false);
   const tendersPerPage = 24;
 
   // Debounce the search query
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearchQuery(searchQuery);
-    }, 500); // 500ms delay
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Trigger search when debounced query changes
+  // Reset to page 1 when search query changes
   useEffect(() => {
     if (debouncedSearchQuery !== searchQuery) {
-      // Still typing, don't search yet
-      return;
+      return; // Still typing, don't reset page yet
     }
-
-    // Reset to page 1 when search query changes
+    
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-
-    // Perform the search
-    performSearch(debouncedSearchQuery, 1);
   }, [debouncedSearchQuery]);
 
-  const fetchTendersFromDatabase = async (page = 1, search = '') => {
-    try {
-      console.log(`Fetching tenders from database (page ${page}, search: "${search}")...`);
-      
-      const result = await getTenders(page, search, tendersPerPage);
-      
-      console.log(`Successfully fetched ${result.tenders.length} tenders from database`);
-      setData(result);
-      setError(null);
-    } catch (err) {
-      console.error('Database fetch error:', err);
-      let errorMessage = 'Failed to fetch tenders from database';
-      
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
-    }
-  };
+  // Use TanStack Query for data fetching
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    isFetching,
+    refetch
+  } = useTenders(currentPage, debouncedSearchQuery, tendersPerPage);
 
-  const performSearch = async (query: string, page = 1) => {
-    setSearchLoading(true);
-    try {
-      await fetchTendersFromDatabase(page, query);
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const goToPage = async (page: number) => {
+  const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
-    setPageLoading(true);
-    try {
-      await fetchTendersFromDatabase(page, debouncedSearchQuery);
-    } finally {
-      setPageLoading(false);
-    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
-  const goToPrevious = () => {
+  const goToPrevious = useCallback(() => {
     if (currentPage > 1) {
       goToPage(currentPage - 1);
     }
-  };
+  }, [currentPage, goToPage]);
 
-  const goToNext = () => {
+  const goToNext = useCallback(() => {
     if (data && currentPage < data.pagination.totalPages) {
       goToPage(currentPage + 1);
     }
-  };
+  }, [currentPage, data, goToPage]);
 
-  const handleSearchInputChange = (query: string) => {
+  const handleSearchInputChange = useCallback((query: string) => {
     setSearchQuery(query);
-    // Show loading state immediately when user starts typing
-    if (query.trim() !== debouncedSearchQuery.trim()) {
-      setSearchLoading(true);
-    }
-  };
+  }, []);
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchQuery('');
     setDebouncedSearchQuery('');
     setCurrentPage(1);
-    setSearchLoading(true);
-    fetchTendersFromDatabase(1, '').finally(() => setSearchLoading(false));
-  };
-
-  useEffect(() => {
-    const initializeApp = async () => {
-      await fetchTendersFromDatabase(1);
-      setLoading(false);
-    };
-
-    initializeApp();
   }, []);
 
-  if (loading) {
+  const isSearching = searchQuery !== debouncedSearchQuery;
+
+  if (isLoading) {
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Search Box Skeleton */}
@@ -153,7 +86,7 @@ const TenderList: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <div className="text-center py-12 sm:py-16 px-4">
         <div className="bg-white rounded-lg border border-red-200 p-6 sm:p-8 max-w-md mx-auto">
@@ -161,9 +94,11 @@ const TenderList: React.FC = () => {
             <AlertCircle className="w-6 h-6 text-red-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to load tenders</h3>
-          <p className="text-red-600 text-sm mb-6">{error}</p>
+          <p className="text-red-600 text-sm mb-6">
+            {error instanceof Error ? error.message : 'An error occurred while loading tenders'}
+          </p>
           <button
-            onClick={() => fetchTendersFromDatabase(currentPage, debouncedSearchQuery)}
+            onClick={() => refetch()}
             className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
           >
             Try Again
@@ -196,7 +131,7 @@ const TenderList: React.FC = () => {
               <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
             </button>
           )}
-          {searchLoading && (
+          {(isSearching || isFetching) && (
             <div className="absolute right-10 sm:right-12 top-1/2 transform -translate-y-1/2">
               <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
             </div>
@@ -204,7 +139,7 @@ const TenderList: React.FC = () => {
         </div>
         {searchQuery && (
           <div className="mt-2 text-xs sm:text-sm text-gray-600">
-            {searchLoading ? (
+            {isSearching ? (
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
                 <span>Searching...</span>
@@ -264,7 +199,7 @@ const TenderList: React.FC = () => {
         </div>
       ) : (
         <>
-          {pageLoading ? (
+          {isFetching && !isLoading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: tendersPerPage }, (_, index) => (
                 <SkeletonCard key={index} />
@@ -286,7 +221,7 @@ const TenderList: React.FC = () => {
               <div className="flex items-center justify-between">
                 <button
                   onClick={goToPrevious}
-                  disabled={currentPage === 1 || pageLoading}
+                  disabled={currentPage === 1 || isFetching}
                   className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
                 >
                   <ChevronLeft className="w-4 h-4" />
@@ -311,7 +246,7 @@ const TenderList: React.FC = () => {
                       <button
                         key={pageNum}
                         onClick={() => goToPage(pageNum)}
-                        disabled={pageLoading}
+                        disabled={isFetching}
                         className={`px-2 sm:px-3 py-2 rounded-md transition-colors font-medium text-sm disabled:opacity-50 ${
                           currentPage === pageNum
                             ? 'bg-blue-600 text-white'
@@ -328,7 +263,7 @@ const TenderList: React.FC = () => {
                       <span className="px-1 sm:px-2 text-gray-400 text-sm">...</span>
                       <button
                         onClick={() => goToPage(data.pagination.totalPages)}
-                        disabled={pageLoading}
+                        disabled={isFetching}
                         className="px-2 sm:px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm disabled:opacity-50"
                       >
                         {data.pagination.totalPages}
@@ -339,7 +274,7 @@ const TenderList: React.FC = () => {
 
                 <button
                   onClick={goToNext}
-                  disabled={currentPage === data.pagination.totalPages || pageLoading}
+                  disabled={currentPage === data.pagination.totalPages || isFetching}
                   className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
                 >
                   <span className="hidden sm:inline">Next</span>

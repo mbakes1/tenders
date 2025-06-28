@@ -1,71 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Bookmark, LogOut, ChevronDown, Shield } from 'lucide-react';
-import { signOut, supabase } from '../lib/supabase';
+import { signOut } from '../lib/supabase';
 import { Link } from 'react-router-dom';
+import { useCurrentUser, useIsAdmin, useCacheUtils } from '../lib/queries';
 
 interface UserMenuProps {
   onSignOut: () => void;
 }
 
 const UserMenu: React.FC<UserMenuProps> = ({ onSignOut }) => {
-  const [user, setUser] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [adminCheckLoading, setAdminCheckLoading] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { clearAllCaches } = useCacheUtils();
 
-  useEffect(() => {
-    // Get current user
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      
-      // Check admin status if user is authenticated
-      if (user) {
-        try {
-          const { data, error } = await supabase.rpc('is_admin');
-          if (!error) {
-            setIsAdmin(data || false);
-          }
-        } catch (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
-        }
-      } else {
-        setIsAdmin(false);
-      }
-      setAdminCheckLoading(false);
-    };
+  // Use TanStack Query for user and admin state
+  const { data: currentUser } = useCurrentUser();
+  const { data: adminData, isLoading: adminCheckLoading } = useIsAdmin();
 
-    getUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user || null);
-        
-        if (session?.user) {
-          // Check admin status for new session
-          setAdminCheckLoading(true);
-          try {
-            const { data, error } = await supabase.rpc('is_admin');
-            if (!error) {
-              setIsAdmin(data || false);
-            }
-          } catch (error) {
-            console.error('Error checking admin status:', error);
-            setIsAdmin(false);
-          }
-          setAdminCheckLoading(false);
-        } else {
-          setIsAdmin(false);
-          setAdminCheckLoading(false);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const user = currentUser?.user;
+  const isAdmin = adminData?.isAdmin || false;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -80,6 +33,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onSignOut }) => {
 
   const handleSignOut = async () => {
     await signOut();
+    clearAllCaches(); // Clear all cached data on sign out
     onSignOut();
     setIsOpen(false);
   };

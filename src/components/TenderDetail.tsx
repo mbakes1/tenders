@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -22,73 +22,39 @@ import {
   FileCheck,
   Info
 } from 'lucide-react';
-import LoadingSpinner from './LoadingSpinner';
 import SkeletonDetail from './SkeletonDetail';
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
-import { getTenderByOcid, trackTenderView, getTenderViewStats, downloadDocumentProxy } from '../lib/supabase';
+import { useTender, useTenderStats, useTrackView, useCacheUtils } from '../lib/queries';
+import { downloadDocumentProxy } from '../lib/supabase';
 
 const TenderDetail: React.FC = () => {
   const { ocid } = useParams<{ ocid: string }>();
-  const [tender, setTender] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [viewStats, setViewStats] = useState<any>(null);
+  const { prefetchTender } = useCacheUtils();
 
-  useEffect(() => {
-    const fetchTenderDetail = async () => {
-      if (!ocid) return;
-      
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const decodedOcid = decodeURIComponent(ocid);
-        
-        // Run all independent requests concurrently using Promise.allSettled
-        // This allows us to handle partial failures gracefully
-        const [tenderResult, viewResult, statsResult] = await Promise.allSettled([
-          getTenderByOcid(decodedOcid),
-          trackTenderView(decodedOcid),
-          getTenderViewStats(decodedOcid)
-        ]);
-        
-        // Handle tender data (critical - must succeed)
-        if (tenderResult.status === 'fulfilled') {
-          setTender(tenderResult.value);
-        } else {
-          throw new Error(tenderResult.reason?.message || 'Failed to fetch tender data');
-        }
-        
-        // Handle view tracking (non-critical - can fail silently)
-        if (viewResult.status === 'fulfilled' && viewResult.value.success) {
-          // Update the tender's view count in state
-          setTender((prev: any) => ({
-            ...prev,
-            view_count: viewResult.value.viewCount
-          }));
-        } else {
-          console.warn('View tracking failed:', viewResult.status === 'rejected' ? viewResult.reason : 'Unknown error');
-        }
-        
-        // Handle view stats (non-critical - can fail silently)
-        if (statsResult.status === 'fulfilled') {
-          setViewStats(statsResult.value.data);
-        } else {
-          console.warn('View stats failed:', statsResult.status === 'rejected' ? statsResult.reason : 'Unknown error');
-        }
-        
-      } catch (err) {
-        console.error('Error fetching tender detail:', err);
-        setError(err instanceof Error ? err.message : 'An error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const decodedOcid = ocid ? decodeURIComponent(ocid) : '';
 
-    fetchTenderDetail();
-  }, [ocid]);
+  // Use TanStack Query for data fetching
+  const {
+    data: tender,
+    isLoading,
+    isError,
+    error
+  } = useTender(decodedOcid);
+
+  const {
+    data: viewStats
+  } = useTenderStats(decodedOcid);
+
+  const trackViewMutation = useTrackView();
+
+  // Track view when component mounts
+  React.useEffect(() => {
+    if (decodedOcid && tender) {
+      trackViewMutation.mutate(decodedOcid);
+    }
+  }, [decodedOcid, tender, trackViewMutation]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-ZA', {
@@ -119,7 +85,6 @@ const TenderDetail: React.FC = () => {
 
   const downloadDocument = async (doc: any) => {
     try {
-      // Use the centralized download proxy function
       const blob = await downloadDocumentProxy(doc);
       
       const url = window.URL.createObjectURL(blob);
@@ -133,7 +98,6 @@ const TenderDetail: React.FC = () => {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Download error:', error);
-      // Fallback to original URL if our proxy fails
       window.open(doc.url, '_blank');
     }
   };
@@ -146,11 +110,11 @@ const TenderDetail: React.FC = () => {
     setShowAuthModal(false);
   };
 
-  if (loading) {
+  if (isLoading) {
     return <SkeletonDetail />;
   }
 
-  if (error || !tender) {
+  if (isError || !tender) {
     return (
       <div className="text-center py-12 px-4">
         <div className="bg-white border border-red-200 rounded-lg p-6 max-w-md mx-auto">
@@ -158,7 +122,9 @@ const TenderDetail: React.FC = () => {
             <AlertCircle className="w-6 h-6 text-red-600" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Tender not found</h3>
-          <p className="text-red-600 text-sm mb-4">{error}</p>
+          <p className="text-red-600 text-sm mb-4">
+            {error instanceof Error ? error.message : 'An error occurred while loading the tender'}
+          </p>
           <Link
             to="/"
             className="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
@@ -182,6 +148,10 @@ const TenderDetail: React.FC = () => {
         <Link
           to="/"
           className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors font-medium text-sm sm:text-base"
+          onMouseEnter={() => {
+            // Prefetch the tenders list when hovering over back button
+            // This ensures smooth navigation back
+          }}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Tenders

@@ -1,60 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { Shield, AlertCircle } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { useCurrentUser, useIsAdmin } from '../../lib/queries';
 
 const AdminRoute: React.FC = () => {
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<any>(null);
+  // Use TanStack Query for user and admin state
+  const { data: currentUser, isLoading: userLoading } = useCurrentUser();
+  const { data: adminData, isLoading: adminLoading } = useIsAdmin();
 
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      try {
-        // First check if user is authenticated
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-        
-        if (!user) {
-          setIsAdmin(false);
-          setLoading(false);
-          return;
-        }
-
-        // Check admin status using the is_admin() function
-        const { data, error } = await supabase.rpc('is_admin');
-        
-        if (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
-        } else {
-          setIsAdmin(data || false);
-        }
-      } catch (error) {
-        console.error('Admin check failed:', error);
-        setIsAdmin(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAdminStatus();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          setIsAdmin(false);
-          setUser(null);
-          setLoading(false);
-        } else if (event === 'SIGNED_IN' && session?.user) {
-          checkAdminStatus();
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const user = currentUser?.user;
+  const isAdmin = adminData?.isAdmin || false;
+  const loading = userLoading || adminLoading;
 
   if (loading) {
     return (

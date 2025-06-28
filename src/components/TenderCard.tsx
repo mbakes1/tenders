@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, Building, ExternalLink, Clock, AlertTriangle, Eye } from 'lucide-react';
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
+import { useCacheUtils } from '../lib/queries';
 
 interface TenderCardProps {
   tender: any;
@@ -10,6 +11,7 @@ interface TenderCardProps {
 
 const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const { prefetchTender } = useCacheUtils();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-ZA', {
@@ -58,11 +60,21 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
     setShowAuthModal(false);
   };
 
+  const handleCardHover = () => {
+    // Prefetch tender details when hovering over the card
+    if (tender.ocid) {
+      prefetchTender(tender.ocid);
+    }
+  };
+
   const viewCount = tender.view_count || 0;
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 hover:border-gray-300 hover:shadow-sm transition-all duration-200 h-full flex flex-col">
+      <div 
+        className="bg-white rounded-lg border border-gray-200 p-4 sm:p-5 hover:border-gray-300 hover:shadow-sm transition-all duration-200 h-full flex flex-col"
+        onMouseEnter={handleCardHover}
+      >
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0 pr-3">

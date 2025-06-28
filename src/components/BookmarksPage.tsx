@@ -1,43 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Bookmark, AlertCircle } from 'lucide-react';
-import { getUserBookmarks } from '../lib/supabase';
-import { supabase } from '../lib/supabase';
+import { useBookmarks, useCurrentUser } from '../lib/queries';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
 import ErrorPage from './ErrorPage';
 
 const BookmarksPage: React.FC = () => {
-  const [bookmarks, setBookmarks] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
+  // Use TanStack Query for data fetching
+  const { data: currentUser } = useCurrentUser();
+  const {
+    data: bookmarks = [],
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useBookmarks(1, 24);
 
-  useEffect(() => {
-    const checkAuthAndFetchBookmarks = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
+  const user = currentUser?.user;
 
-        if (user) {
-          const { data, error } = await getUserBookmarks();
-          if (error) {
-            setError(error.message);
-          } else {
-            setBookmarks(data || []);
-          }
-        }
-      } catch (err) {
-        setError('Failed to load bookmarks');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuthAndFetchBookmarks();
-  }, []);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="space-y-4 sm:space-y-6">
         {/* Header Skeleton */}
@@ -63,6 +45,18 @@ const BookmarksPage: React.FC = () => {
         type="404"
         title="Authentication Required"
         message="Please sign in to view your bookmarked tenders. Create an account to save and track interesting opportunities."
+      />
+    );
+  }
+
+  if (isError) {
+    return (
+      <ErrorPage
+        type="500"
+        title="Error Loading Bookmarks"
+        message={error instanceof Error ? error.message : 'Failed to load bookmarks'}
+        showRetry={true}
+        onRetry={() => refetch()}
       />
     );
   }
@@ -94,15 +88,7 @@ const BookmarksPage: React.FC = () => {
       </div>
 
       {/* Bookmarks Grid */}
-      {error ? (
-        <ErrorPage
-          type="500"
-          title="Error Loading Bookmarks"
-          message={error}
-          showRetry={true}
-          onRetry={() => window.location.reload()}
-        />
-      ) : bookmarks.length === 0 ? (
+      {bookmarks.length === 0 ? (
         <div className="text-center py-12 sm:py-16 px-4">
           <div className="bg-white rounded-lg border border-gray-200 p-8 sm:p-12 max-w-md mx-auto">
             <div className="text-6xl mb-4">📌</div>

@@ -1,40 +1,27 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, Home, User, Menu, X } from 'lucide-react';
-import { supabase } from '../lib/supabase';
 import AuthModal from './AuthModal';
 import UserMenu from './UserMenu';
+import { useCurrentUser, useCacheUtils } from '../lib/queries';
 
 const Header: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [user, setUser] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  React.useEffect(() => {
-    // Get current user
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-
-    getUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user || null);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
+  
+  // Use TanStack Query for user state
+  const { data: currentUser } = useCurrentUser();
+  const { invalidateUserData } = useCacheUtils();
+  
+  const user = currentUser?.user;
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
   };
 
   const handleSignOut = () => {
-    setUser(null);
+    // Invalidate user-related cache data
+    invalidateUserData();
   };
 
   const closeMobileMenu = () => {

@@ -226,7 +226,7 @@ const AdminDashboard: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Total Users</p>
               <p className="text-2xl font-bold text-gray-900">
-                {stats ? formatNumber(stats.total_users) : '0'}
+                {formatNumber(stats?.total_users ?? 0)}
               </p>
             </div>
           </div>
@@ -240,10 +240,10 @@ const AdminDashboard: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Total Tenders</p>
               <p className="text-2xl font-bold text-gray-900">
-                {stats ? formatNumber(stats.total_tenders) : '0'}
+                {formatNumber(stats?.total_tenders ?? 0)}
               </p>
               <p className="text-xs text-green-600">
-                {stats ? formatNumber(stats.open_tenders) : '0'} open
+                {formatNumber(stats?.open_tenders ?? 0)} open
               </p>
             </div>
           </div>
@@ -257,7 +257,7 @@ const AdminDashboard: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Total Views</p>
               <p className="text-2xl font-bold text-gray-900">
-                {stats ? formatNumber(stats.total_views) : '0'}
+                {formatNumber(stats?.total_views ?? 0)}
               </p>
             </div>
           </div>
@@ -271,7 +271,7 @@ const AdminDashboard: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Total Bookmarks</p>
               <p className="text-2xl font-bold text-gray-900">
-                {stats ? formatNumber(stats.total_bookmarks) : '0'}
+                {formatNumber(stats?.total_bookmarks ?? 0)}
               </p>
             </div>
           </div>

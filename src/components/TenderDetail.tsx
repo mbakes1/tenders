@@ -14,8 +14,7 @@ import {
   AlertCircle,
   Download,
   Eye,
-  TrendingUp,
-  Share2
+  TrendingUp
 } from 'lucide-react';
 import LoadingSpinner from './LoadingSpinner';
 import SkeletonDetail from './SkeletonDetail';
@@ -30,7 +29,6 @@ const TenderDetail: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [viewStats, setViewStats] = useState<any>(null);
-  const [showShareMenu, setShowShareMenu] = useState(false);
 
   useEffect(() => {
     const fetchTenderDetail = async () => {
@@ -134,30 +132,6 @@ const TenderDetail: React.FC = () => {
     }
   };
 
-  const handleShare = async () => {
-    const shareData = {
-      title: tender.title || 'SA Tender',
-      text: `Check out this tender: ${tender.title}`,
-      url: window.location.href,
-    };
-
-    if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
-      try {
-        await navigator.share(shareData);
-      } catch (error) {
-        console.log('Share cancelled');
-      }
-    } else {
-      // Fallback to clipboard
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        alert('Link copied to clipboard!');
-      } catch (error) {
-        setShowShareMenu(true);
-      }
-    }
-  };
-
   const handleAuthRequired = () => {
     setShowAuthModal(true);
   };
@@ -173,7 +147,7 @@ const TenderDetail: React.FC = () => {
   if (error || !tender) {
     return (
       <div className="text-center py-12 px-4">
-        <div className="card p-6 max-w-md mx-auto">
+        <div className="bg-white border border-red-200 rounded-lg p-6 max-w-md mx-auto">
           <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-6 h-6 text-red-600" />
           </div>
@@ -181,7 +155,7 @@ const TenderDetail: React.FC = () => {
           <p className="text-red-600 text-sm mb-4">{error}</p>
           <Link
             to="/"
-            className="btn btn-primary"
+            className="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
           >
             Back to Tenders
           </Link>
@@ -201,26 +175,25 @@ const TenderDetail: React.FC = () => {
         {/* Back Navigation */}
         <Link
           to="/"
-          className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors font-medium text-sm sm:text-base touch-target tap-highlight-none"
+          className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors font-medium text-sm sm:text-base"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Tenders
         </Link>
 
         {/* Header Section */}
-        <div className="card p-4 sm:p-6">
-          <div className="space-y-4">
-            {/* Title and Meta */}
-            <div>
-              <h1 className="text-responsive-2xl font-bold text-gray-900 mb-3 leading-tight">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
+          <div className="flex flex-col space-y-4">
+            <div className="flex-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 leading-tight">
                 {tender.title || 'Untitled Tender'}
               </h1>
               
               <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm text-gray-600 mb-4">
-                <span className="font-mono text-xs sm:text-sm break-all">OCID: {tender.ocid}</span>
+                <span className="font-mono text-xs sm:text-sm">OCID: {tender.ocid}</span>
                 {tender.bid_number && (
-                  <span className="flex items-center gap-1">
-                    <Tag className="w-4 h-4" />
+                  <span className="flex items-center">
+                    <Tag className="w-4 h-4 mr-1" />
                     <span className="text-xs sm:text-sm">{tender.bid_number}</span>
                   </span>
                 )}
@@ -232,8 +205,7 @@ const TenderDetail: React.FC = () => {
                 )}
               </div>
 
-              {/* Tags Row */}
-              <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className="flex flex-wrap items-center gap-2">
                 {tender.category && (
                   <span className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded border border-blue-200 text-sm font-medium">
                     {tender.category}
@@ -249,7 +221,7 @@ const TenderDetail: React.FC = () => {
             </div>
 
             {/* Status and Actions */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
               <div className="flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center px-3 py-1 rounded text-sm font-medium bg-green-50 text-green-700 border border-green-200">
                   Open
@@ -268,44 +240,32 @@ const TenderDetail: React.FC = () => {
                 )}
               </div>
               
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleShare}
-                  className="btn btn-secondary flex items-center gap-2"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Share</span>
-                </button>
-                
-                <BookmarkButton
-                  tenderOcid={tender.ocid}
-                  onAuthRequired={handleAuthRequired}
-                />
-              </div>
+              <BookmarkButton
+                tenderOcid={tender.ocid}
+                onAuthRequired={handleAuthRequired}
+              />
             </div>
           </div>
         </div>
 
-        {/* Content Grid */}
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* Description */}
             {(tender.description || tender.bid_description) && (
-              <div className="card p-4 sm:p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Description</h2>
                 <div className="space-y-4">
                   {tender.description && (
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">General Description</h3>
-                      <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{tender.description}</p>
+                      <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{tender.description}</p>
                     </div>
                   )}
                   {tender.bid_description && tender.bid_description !== tender.description && (
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">Bid Description</h3>
-                      <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{tender.bid_description}</p>
+                      <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{tender.bid_description}</p>
                     </div>
                   )}
                 </div>
@@ -314,7 +274,7 @@ const TenderDetail: React.FC = () => {
 
             {/* Items */}
             {tenderData?.items && tenderData.items.length > 0 && (
-              <div className="card p-4 sm:p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Items</h2>
                 <div className="space-y-4">
                   {tenderData.items.map((item: any, index: number) => (
@@ -338,19 +298,19 @@ const TenderDetail: React.FC = () => {
 
             {/* Documents */}
             {(tender.documents || tenderData?.documents) && (
-              <div className="card p-4 sm:p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Documents</h2>
                 <div className="space-y-3">
                   {(tender.documents || tenderData.documents).map((doc: any, index: number) => (
-                    <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 gap-3">
+                    <div key={index} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 space-y-3 sm:space-y-0">
                       <div className="flex items-start space-x-3 min-w-0 flex-1">
                         <FileText className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-gray-900 text-sm sm:text-base line-clamp-2">{doc.title}</p>
+                          <p className="font-medium text-gray-900 text-sm sm:text-base truncate">{doc.title}</p>
                           {doc.description && (
-                            <p className="text-sm text-gray-600 line-clamp-2 mt-1">{doc.description}</p>
+                            <p className="text-sm text-gray-600 line-clamp-2">{doc.description}</p>
                           )}
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500">
                             {doc.documentType} • {doc.format}
                           </p>
                         </div>
@@ -359,7 +319,7 @@ const TenderDetail: React.FC = () => {
                         <div className="flex items-center space-x-2 flex-shrink-0">
                           <button
                             onClick={() => downloadDocument(doc)}
-                            className="btn btn-primary flex items-center gap-1 text-sm"
+                            className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium"
                           >
                             <Download className="w-3 h-3" />
                             <span>Download</span>
@@ -368,10 +328,10 @@ const TenderDetail: React.FC = () => {
                             href={doc.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center space-x-1 text-gray-600 hover:text-gray-700 transition-colors text-sm touch-target tap-highlight-none"
+                            className="flex items-center space-x-1 text-gray-600 hover:text-gray-700 transition-colors text-sm"
                           >
                             <ExternalLink className="w-3 h-3" />
-                            <span className="hidden sm:inline">Original</span>
+                            <span>Original</span>
                           </a>
                         </div>
                       )}
@@ -383,9 +343,9 @@ const TenderDetail: React.FC = () => {
 
             {/* Special Conditions */}
             {tender.special_conditions && (
-              <div className="card p-4 sm:p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Special Conditions</h2>
-                <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base leading-relaxed">{tender.special_conditions}</p>
+                <p className="text-gray-700 whitespace-pre-wrap text-sm sm:text-base">{tender.special_conditions}</p>
               </div>
             )}
           </div>
@@ -394,7 +354,7 @@ const TenderDetail: React.FC = () => {
           <div className="space-y-4 sm:space-y-6">
             {/* View Statistics */}
             {viewStats && (
-              <div className="card p-4 sm:p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">View Statistics</h2>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -418,7 +378,7 @@ const TenderDetail: React.FC = () => {
             )}
 
             {/* Key Information */}
-            <div className="card p-4 sm:p-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Key Information</h2>
               <div className="space-y-4">
                 {/* Tender Period */}
@@ -464,7 +424,7 @@ const TenderDetail: React.FC = () => {
             </div>
 
             {/* Buyer Information */}
-            <div className="card p-4 sm:p-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Buyer Information</h2>
               <div className="space-y-3">
                 {tender.buyer && (
@@ -493,12 +453,7 @@ const TenderDetail: React.FC = () => {
                   {tender.contact_tel && (
                     <div className="flex items-center space-x-3">
                       <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <a 
-                        href={`tel:${tender.contact_tel}`}
-                        className="text-sm text-blue-600 hover:text-blue-700 touch-target tap-highlight-none"
-                      >
-                        {tender.contact_tel}
-                      </a>
+                      <span className="text-sm text-gray-600">{tender.contact_tel}</span>
                     </div>
                   )}
                   
@@ -507,7 +462,7 @@ const TenderDetail: React.FC = () => {
                       <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
                       <a
                         href={`mailto:${tender.contact_email}`}
-                        className="text-sm text-blue-600 hover:text-blue-700 truncate touch-target tap-highlight-none"
+                        className="text-sm text-blue-600 hover:text-blue-700 truncate"
                       >
                         {tender.contact_email}
                       </a>
@@ -528,7 +483,7 @@ const TenderDetail: React.FC = () => {
 
             {/* Submission Details */}
             {(tender.submission_email || tender.file_size_limit || tender.required_format) && (
-              <div className="card p-4 sm:p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Submission Details</h2>
                 <div className="space-y-3">
                   {tender.submission_email && (
@@ -536,7 +491,7 @@ const TenderDetail: React.FC = () => {
                       <p className="text-sm text-gray-600">Submission Email</p>
                       <a
                         href={`mailto:${tender.submission_email}`}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium break-all touch-target tap-highlight-none"
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium break-all"
                       >
                         {tender.submission_email}
                       </a>

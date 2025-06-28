@@ -5,227 +5,24 @@
 
 @layer base {
   * {
-    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    box-sizing: border-box;
-  }
-  
-  html {
-    /* Prevent horizontal scroll on mobile */
-    overflow-x: hidden;
-    /* Smooth scrolling */
-    scroll-behavior: smooth;
-    /* Better text rendering */
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
   
   body {
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     font-variant-numeric: oldstyle-nums;
     background-color: #fafafa;
-    /* Prevent zoom on input focus on iOS */
-    -webkit-text-size-adjust: 100%;
-    -ms-text-size-adjust: 100%;
-    /* Prevent horizontal scroll */
-    overflow-x: hidden;
-    /* Minimum font size for readability */
-    font-size: 16px;
-    line-height: 1.6;
   }
 
-  /* Enhanced touch targets for mobile */
-  button, a, input, select, textarea, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
-    /* Better touch response */
-    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.1);
-    touch-action: manipulation;
-  }
-  
-  /* Improve input experience on mobile */
-  input, textarea, select {
-    /* Prevent zoom on focus for iOS */
-    font-size: 16px;
-    /* Better mobile keyboard */
-    -webkit-appearance: none;
-    border-radius: 0;
-  }
-  
-  /* Better focus states for accessibility */
-  *:focus-visible {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
-  }
-  
-  /* Remove default button styles */
-  button {
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-  }
-}
-
-@layer components {
-  /* Mobile-first container */
-  .container {
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-  
-  /* Responsive container sizes */
-  @media (min-width: 480px) {
-    .container {
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-    }
-  }
-  
-  @media (min-width: 768px) {
-    .container {
-      max-width: 768px;
-      padding-left: 2rem;
-      padding-right: 2rem;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .container {
-      max-width: 1024px;
-    }
-  }
-  
-  @media (min-width: 1280px) {
-    .container {
-      max-width: 1280px;
-    }
-  }
-  
-  /* Mobile-optimized card component */
-  .card {
-    @apply bg-white rounded-lg border border-gray-200 shadow-sm;
-    /* Prevent content overflow */
-    overflow: hidden;
-    /* Better performance on mobile */
-    transform: translateZ(0);
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-  }
-  
-  /* Touch-friendly buttons */
-  .btn {
-    @apply inline-flex items-center justify-center px-4 py-3 rounded-lg font-medium transition-all duration-200;
-    min-height: 44px;
-    min-width: 44px;
-    /* Better touch feedback */
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-  }
-  
-  .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800;
-  }
-  
-  .btn-secondary {
-    @apply bg-gray-100 text-gray-700 hover:bg-gray-200 active:bg-gray-300;
-  }
-  
-  /* Mobile-optimized form inputs */
-  .form-input {
-    @apply block w-full px-4 py-3 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder-gray-500;
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
-    font-size: 16px; /* Prevent zoom on iOS */
-    min-height: 44px;
-    transition: all 0.2s ease;
-  }
-  
-  /* Responsive grid system */
-  .grid-responsive {
-    display: grid;
-    gap: 1rem;
-    grid-template-columns: 1fr;
-  }
-  
-  @media (min-width: 480px) {
-    .grid-responsive {
-      gap: 1.25rem;
-    }
-  }
-  
-  @media (min-width: 768px) {
-    .grid-responsive {
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .grid-responsive {
-      grid-template-columns: repeat(3, 1fr);
-      gap: 2rem;
-    }
-  }
-  
-  @media (min-width: 1280px) {
-    .grid-responsive {
-      grid-template-columns: repeat(4, 1fr);
+  /* Improve touch targets on mobile */
+  @media (max-width: 768px) {
+    button, a, input, select, textarea {
+      min-height: 44px;
     }
   }
 }
 
 @layer utilities {
-  /* Text utilities with mobile-first approach */
-  .text-responsive-xs {
-    font-size: 0.75rem;
-    line-height: 1.5;
-  }
-  
-  .text-responsive-sm {
-    font-size: 0.875rem;
-    line-height: 1.5;
-  }
-  
-  .text-responsive-base {
-    font-size: 1rem;
-    line-height: 1.6;
-  }
-  
-  .text-responsive-lg {
-    font-size: 1.125rem;
-    line-height: 1.6;
-  }
-  
-  .text-responsive-xl {
-    font-size: 1.25rem;
-    line-height: 1.5;
-  }
-  
-  .text-responsive-2xl {
-    font-size: 1.5rem;
-    line-height: 1.4;
-  }
-  
-  @media (min-width: 768px) {
-    .text-responsive-xs { font-size: 0.875rem; }
-    .text-responsive-sm { font-size: 1rem; }
-    .text-responsive-base { font-size: 1.125rem; }
-    .text-responsive-lg { font-size: 1.25rem; }
-    .text-responsive-xl { font-size: 1.5rem; }
-    .text-responsive-2xl { font-size: 1.875rem; }
-  }
-  
-  /* Line clamping utilities */
-  .line-clamp-1 {
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -240,17 +37,12 @@
     overflow: hidden;
   }
   
-  /* Animation utilities */
   .animate-fade-in {
     animation: fadeIn 0.3s ease-out;
   }
   
   .animate-slide-up {
     animation: slideUp 0.2s ease-out;
-  }
-  
-  .animate-pulse-slow {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
   /* Mobile-optimized scrollbars */
@@ -261,12 +53,10 @@
 
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
-    height: 6px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
     background: #f7fafc;
-    border-radius: 3px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
@@ -274,11 +64,13 @@
     border-radius: 3px;
   }
 
-  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background-color: #a0aec0;
+  /* Improve focus visibility for accessibility */
+  .focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
   }
 
-  /* Safe area utilities for devices with notches */
+  /* Safe area insets for mobile devices with notches */
   .safe-area-top {
     padding-top: env(safe-area-inset-top);
   }
@@ -286,182 +78,35 @@
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  
-  .safe-area-left {
-    padding-left: env(safe-area-inset-left);
-  }
-  
-  .safe-area-right {
-    padding-right: env(safe-area-inset-right);
-  }
-  
-  /* Spacing utilities with mobile-first approach */
-  .space-mobile {
-    margin: 0.5rem;
-  }
-  
-  @media (min-width: 480px) {
-    .space-mobile { margin: 0.75rem; }
-  }
-  
-  @media (min-width: 768px) {
-    .space-mobile { margin: 1rem; }
-  }
-  
-  @media (min-width: 1024px) {
-    .space-mobile { margin: 1.5rem; }
-  }
-  
-  /* Performance optimizations */
-  .gpu-accelerated {
-    transform: translateZ(0);
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-    -webkit-perspective: 1000;
-    perspective: 1000;
-  }
-  
-  /* Touch-friendly interactive states */
-  .touch-feedback {
-    transition: all 0.15s ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-  
-  .touch-feedback:active {
-    transform: scale(0.98);
-  }
-  
-  /* Responsive visibility utilities */
-  .mobile-only {
-    display: block;
-  }
-  
-  .tablet-up {
-    display: none;
-  }
-  
-  @media (min-width: 768px) {
-    .mobile-only {
-      display: none;
-    }
-    
-    .tablet-up {
-      display: block;
-    }
-  }
-  
-  .desktop-only {
-    display: none;
-  }
-  
-  @media (min-width: 1024px) {
-    .desktop-only {
-      display: block;
-    }
-  }
 }
 
-/* Animation keyframes */
 @keyframes fadeIn {
-  from { 
-    opacity: 0; 
-    transform: translateY(4px);
-  }
-  to { 
-    opacity: 1; 
-    transform: translateY(0);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
-  from { 
-    transform: translateY(8px); 
-    opacity: 0; 
-  }
-  to { 
-    transform: translateY(0); 
-    opacity: 1; 
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 
 /* Mobile-specific optimizations */
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   /* Reduce motion for users who prefer it */
   @media (prefers-reduced-motion: reduce) {
     .animate-slide-up,
-    .animate-fade-in,
-    .touch-feedback {
+    .animate-fade-in {
       animation: none;
-      transition: none;
     }
   }
 
-  /* Better spacing for small screens */
-  .space-y-4 > * + * { margin-top: 0.75rem; }
-  .space-y-6 > * + * { margin-top: 1rem; }
+  /* Improve text readability on small screens */
+  .text-xs { font-size: 0.75rem; }
+  .text-sm { font-size: 0.875rem; }
   
-  /* Optimize text sizes for small screens */
-  h1 { font-size: 1.5rem; }
-  h2 { font-size: 1.25rem; }
-  h3 { font-size: 1.125rem; }
-  
-  /* Better button spacing */
-  .btn {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-  }
-}
-
-/* Medium devices optimization */
-@media (min-width: 481px) and (max-width: 768px) {
-  .container {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-  
-  /* Two-column layout for tablets */
-  .grid-responsive {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.25rem;
-  }
-}
-
-/* Large devices optimization */
-@media (min-width: 769px) and (max-width: 1024px) {
-  /* Three-column layout */
-  .grid-responsive {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-  }
-  
-  /* Better typography scaling */
-  .text-responsive-2xl {
-    font-size: 2rem;
-    line-height: 1.3;
-  }
-}
-
-/* Extra large devices optimization */
-@media (min-width: 1025px) {
-  /* Four-column layout for large screens */
-  .grid-responsive {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 2rem;
-  }
-  
-  /* Maximum container width */
-  .container {
-    max-width: 1280px;
-  }
+  /* Better spacing for mobile */
+  .space-y-4 > * + * { margin-top: 1rem; }
+  .space-y-6 > * + * { margin-top: 1.5rem; }
 }
 
 /* High contrast mode support */
@@ -477,86 +122,9 @@
   .bg-gray-50 {
     background-color: #fff;
   }
-  
-  .btn-secondary {
-    border: 2px solid #000;
-  }
 }
 
-/* Dark mode support */
+/* Dark mode support (if needed in future) */
 @media (prefers-color-scheme: dark) {
-  body {
-    background-color: #111827;
-    color: #f9fafb;
-  }
-  
-  .card {
-    background-color: #1f2937;
-    border-color: #374151;
-  }
-  
-  .form-input {
-    background-color: #1f2937;
-    border-color: #374151;
-    color: #f9fafb;
-  }
-  
-  .btn-secondary {
-    background-color: #374151;
-    color: #f9fafb;
-  }
-}
-
-/* Print styles */
-@media print {
-  * {
-    background: transparent !important;
-    color: black !important;
-    box-shadow: none !important;
-    text-shadow: none !important;
-  }
-  
-  .no-print {
-    display: none !important;
-  }
-  
-  a, a:visited {
-    text-decoration: underline;
-  }
-  
-  .container {
-    max-width: none;
-    padding: 0;
-  }
-}
-
-/* Landscape orientation optimizations */
-@media (orientation: landscape) and (max-height: 500px) {
-  /* Reduce header height in landscape on mobile */
-  .mobile-header {
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
-  
-  /* Optimize modal heights */
-  .modal-content {
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-}
-
-/* Connection-aware optimizations */
-@media (prefers-reduced-data: reduce) {
-  /* Disable animations on slow connections */
-  .animate-fade-in,
-  .animate-slide-up,
-  .touch-feedback {
-    animation: none;
-    transition: none;
-  }
-  
-  /* Reduce image quality */
-  img {
-    image-rendering: optimizeSpeed;
-  }
+  /* Dark mode styles would go here */
 }

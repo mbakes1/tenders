@@ -127,21 +127,21 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-modal p-4 safe-area-inset">
-      <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto scrollbar-thin gpu-accelerated">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-xl">
-          <div className="min-w-0 flex-1 pr-4">
-            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">
               {isSignUp ? 'Create Account' : 'Welcome Back'}
             </h2>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">
+            <p className="text-sm text-gray-600 mt-1">
               {isSignUp ? 'Join SA Tenders to bookmark opportunities' : 'Sign in to access your bookmarks'}
             </p>
           </div>
           <button
             onClick={handleClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors touch-target tap-highlight-none flex-shrink-0"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label="Close modal"
           >
             <X className="w-5 h-5 text-gray-500" />
@@ -152,9 +152,9 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
         <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
           {/* Success Message */}
           {success && (
-            <div className="flex items-start space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg animate-slide-down">
+            <div className="flex items-start space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg">
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
+              <div>
                 <p className="text-sm font-medium text-green-800">Success!</p>
                 <p className="text-sm text-green-700 mt-1">{success}</p>
               </div>
@@ -163,11 +163,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
           {/* Error Message */}
           {error && (
-            <div className="flex items-start space-x-3 p-4 bg-red-50 border border-red-200 rounded-lg animate-slide-down">
+            <div className="flex items-start space-x-3 p-4 bg-red-50 border border-red-200 rounded-lg">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div className="min-w-0 flex-1">
+              <div>
                 <p className="text-sm font-medium text-red-800">Authentication Error</p>
-                <p className="text-sm text-red-700 mt-1 break-words">{error}</p>
+                <p className="text-sm text-red-700 mt-1">{error}</p>
               </div>
             </div>
           )}
@@ -188,14 +188,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                className={`form-input pl-10 pr-3 ${
+                className={`block w-full pl-10 pr-3 py-3 border rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-colors ${
                   validationErrors.email 
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
-                    : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
+                    : 'border-gray-300 focus:border-blue-500'
                 }`}
                 placeholder="Enter your email"
                 autoComplete="email"
-                inputMode="email"
               />
             </div>
             {validationErrors.email && (
@@ -220,7 +219,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                 required
                 minLength={6}
                 disabled={loading}
-                className={`form-input pl-10 pr-12 ${
+                className={`block w-full pl-10 pr-12 py-3 border rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 text-sm transition-colors ${
                   validationErrors.password 
                     ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
                     : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
@@ -231,7 +230,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center touch-target tap-highlight-none"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? (
@@ -280,7 +279,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
           <button
             type="submit"
             disabled={loading || Object.keys(validationErrors).length > 0}
-            className="btn btn-primary w-full flex items-center justify-center gap-2"
+            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -301,7 +300,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
               <button
                 onClick={switchMode}
                 disabled={loading}
-                className="text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50 touch-target tap-highlight-none"
+                className="text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
               >
                 {isSignUp ? 'Sign In' : 'Sign Up'}
               </button>
@@ -313,24 +312,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
             <p className="text-xs text-gray-500 text-center mb-3">
               ✨ <strong>Benefits of having an account:</strong>
             </p>
-            <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-              <div className="flex items-center space-x-1">
-                <span>📌</span>
-                <span>Bookmark tenders</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <span>🔔</span>
-                <span>Get notifications</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <span>📊</span>
-                <span>Track history</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <span>💾</span>
-                <span>Sync devices</span>
-              </div>
-            </div>
+            <ul className="text-xs text-gray-500 space-y-1">
+              <li>📌 Bookmark interesting tenders</li>
+              <li>🔔 Get notified about new opportunities</li>
+              <li>📊 Track your tender viewing history</li>
+              <li>💾 Sync bookmarks across devices</li>
+            </ul>
           </div>
         </div>
       </div>

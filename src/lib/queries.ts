@@ -11,7 +11,8 @@ import {
   getCurrentUser,
   checkAdminStatus,
   getAdminStats,
-  getRecentActivity
+  getRecentActivity,
+  type Tender
 } from './supabase';
 
 // Query Keys - Centralized key management
@@ -46,7 +47,7 @@ export const useTenders = (page: number, search: string, limit: number = 24) => 
   });
 };
 
-export const useTender = (ocid: string, options?: Partial<UseQueryOptions>) => {
+export const useTender = (ocid: string, options?: Partial<UseQueryOptions<Tender>>) => {
   return useQuery({
     queryKey: queryKeys.tender(ocid),
     queryFn: () => getTenderByOcid(ocid),
@@ -61,7 +62,10 @@ export const useTender = (ocid: string, options?: Partial<UseQueryOptions>) => {
 export const useTenderStats = (ocid: string) => {
   return useQuery({
     queryKey: queryKeys.tenderStats(ocid),
-    queryFn: () => getTenderViewStats(ocid),
+    queryFn: async () => {
+      const result = await getTenderViewStats(ocid);
+      return result.data;
+    },
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!ocid,
@@ -73,7 +77,10 @@ export const useTenderStats = (ocid: string) => {
 export const useBookmarks = (page: number = 1, limit: number = 24) => {
   return useQuery({
     queryKey: queryKeys.bookmarks(page, limit),
-    queryFn: () => getUserBookmarks(page, limit),
+    queryFn: async () => {
+      const result = await getUserBookmarks(page, limit);
+      return result.data || [];
+    },
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
@@ -83,7 +90,10 @@ export const useBookmarks = (page: number = 1, limit: number = 24) => {
 export const useIsBookmarked = (ocid: string) => {
   return useQuery({
     queryKey: queryKeys.isBookmarked(ocid),
-    queryFn: () => checkIfBookmarked(ocid),
+    queryFn: async () => {
+      const result = await checkIfBookmarked(ocid);
+      return { isBookmarked: result.isBookmarked, error: result.error };
+    },
     staleTime: 1 * 60 * 1000, // 1 minute
     gcTime: 5 * 60 * 1000, // 5 minutes
     enabled: !!ocid,
@@ -95,7 +105,10 @@ export const useIsBookmarked = (ocid: string) => {
 export const useCurrentUser = () => {
   return useQuery({
     queryKey: queryKeys.currentUser(),
-    queryFn: getCurrentUser,
+    queryFn: async () => {
+      const result = await getCurrentUser();
+      return { user: result.user, error: result.error };
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 1,
@@ -105,7 +118,10 @@ export const useCurrentUser = () => {
 export const useIsAdmin = () => {
   return useQuery({
     queryKey: queryKeys.isAdmin(),
-    queryFn: checkAdminStatus,
+    queryFn: async () => {
+      const result = await checkAdminStatus();
+      return { isAdmin: result.isAdmin, error: result.error };
+    },
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     retry: 1,
@@ -116,7 +132,10 @@ export const useIsAdmin = () => {
 export const useAdminStats = () => {
   return useQuery({
     queryKey: queryKeys.adminStats(),
-    queryFn: getAdminStats,
+    queryFn: async () => {
+      const result = await getAdminStats();
+      return result.data;
+    },
     staleTime: 1 * 60 * 1000, // 1 minute
     gcTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
@@ -126,7 +145,10 @@ export const useAdminStats = () => {
 export const useRecentActivity = (limit: number = 10) => {
   return useQuery({
     queryKey: queryKeys.recentActivity(limit),
-    queryFn: () => getRecentActivity(limit),
+    queryFn: async () => {
+      const result = await getRecentActivity(limit);
+      return result.data || [];
+    },
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 2 * 60 * 1000, // 2 minutes
     retry: 1,
@@ -215,7 +237,7 @@ export const useTrackView = () => {
     onSuccess: (data, ocid) => {
       // Update tender view count in cache if available
       if (data.success && data.viewCount) {
-        queryClient.setQueryData(queryKeys.tender(ocid), (oldData: any) => {
+        queryClient.setQueryData(queryKeys.tender(ocid), (oldData: Tender | undefined) => {
           if (oldData) {
             return { ...oldData, view_count: data.viewCount };
           }
@@ -261,12 +283,12 @@ export const useCacheUtils = () => {
     },
     
     // Get cached data without triggering a fetch
-    getCachedTender: (ocid: string) => {
+    getCachedTender: (ocid: string): Tender | undefined => {
       return queryClient.getQueryData(queryKeys.tender(ocid));
     },
     
     // Set tender data in cache (useful for optimistic updates)
-    setCachedTender: (ocid: string, data: any) => {
+    setCachedTender: (ocid: string, data: Tender) => {
       queryClient.setQueryData(queryKeys.tender(ocid), data);
     },
   };

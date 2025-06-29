@@ -26,7 +26,7 @@ import SkeletonDetail from './SkeletonDetail';
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
 import { useTender, useTenderStats, useTrackView, useCacheUtils } from '../lib/queries';
-import { downloadDocumentProxy } from '../lib/supabase';
+import { downloadDocumentProxy, type Tender } from '../lib/supabase';
 
 const TenderDetail: React.FC = () => {
   const { ocid } = useParams<{ ocid: string }>();
@@ -139,6 +139,7 @@ const TenderDetail: React.FC = () => {
     );
   }
 
+  // Parse full_data if it exists, otherwise use the tender data directly
   const tenderData = tender.full_data?.tender || tender.full_data || tender;
   const closeDate = tender.close_date;
   const daysUntilClose = closeDate ? getDaysUntilClose(closeDate) : null;

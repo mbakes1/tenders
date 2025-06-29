@@ -4,9 +4,10 @@ import { Calendar, Building, ExternalLink, Clock, AlertTriangle, Eye } from 'luc
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
 import { useCacheUtils } from '../lib/queries';
+import { type Tender } from '../lib/supabase';
 
 interface TenderCardProps {
-  tender: any;
+  tender: Tender;
 }
 
 const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
@@ -29,7 +30,8 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
     return diffDays;
   };
 
-  const formatViewCount = (count: number) => {
+  const formatViewCount = (count: number | null) => {
+    if (!count || count === 0) return '0';
     if (count >= 1000000) {
       return `${(count / 1000000).toFixed(1)}M`;
     } else if (count >= 1000) {
@@ -38,8 +40,8 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
     return count.toString();
   };
 
-  const daysUntilClose = tender.closeDate || tender.close_date
-    ? getDaysUntilClose(tender.closeDate || tender.close_date)
+  const daysUntilClose = tender.close_date
+    ? getDaysUntilClose(tender.close_date)
     : null;
 
   const getUrgencyConfig = (days: number | null) => {
@@ -126,7 +128,7 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
           )}
 
           {/* Closing Date */}
-          {(tender.closeDate || tender.close_date) && (
+          {tender.close_date && (
             <div className="flex items-center justify-between">
               <div className="flex items-center text-sm text-gray-600 min-w-0 flex-1">
                 <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-100 rounded flex items-center justify-center mr-2 flex-shrink-0">
@@ -134,7 +136,7 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
                 </div>
                 <div className="min-w-0">
                   <p className="font-medium text-gray-900 text-xs sm:text-sm truncate">
-                    Closes: {formatDate(tender.closeDate || tender.close_date)}
+                    Closes: {formatDate(tender.close_date)}
                   </p>
                 </div>
               </div>

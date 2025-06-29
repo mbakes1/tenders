@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { Database } from './database.types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -7,7 +8,18 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+
+// Type exports for use throughout the application
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row'];
+export type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert'];
+export type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update'];
+
+// Specific type exports for commonly used tables
+export type Tender = Tables<'tenders'>;
+export type Bookmark = Tables<'bookmarks'>;
+export type TenderView = Tables<'tender_views'>;
+export type FetchLog = Tables<'fetch_logs'>;
 
 // Auth helper functions with improved error handling
 export const signUp = async (email: string, password: string) => {
@@ -155,7 +167,7 @@ export const getTenders = async (page: number, search: string, limit: number) =>
   }
 };
 
-export const getTenderByOcid = async (ocid: string) => {
+export const getTenderByOcid = async (ocid: string): Promise<Tender> => {
   // Validate OCID
   if (!ocid || typeof ocid !== 'string' || ocid.trim().length === 0) {
     throw new Error('Invalid tender reference provided');
@@ -301,7 +313,7 @@ export const checkIfBookmarked = async (tenderOcid: string) => {
   }
 };
 
-export const getUserBookmarks = async (page = 1, limit = 24) => {
+export const getUserBookmarks = async (page = 1, limit = 24): Promise<{ data: Tender[], error: any }> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {

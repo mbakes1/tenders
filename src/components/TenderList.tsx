@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Clock, AlertCircle, ChevronLeft, ChevronRight, Search, X, Zap, Filter, MapPin, Briefcase } from 'lucide-react';
+import { Clock, AlertCircle, ChevronLeft, ChevronRight, Search, X, Zap, Filter, MapPin, Briefcase, ChevronUp, ChevronDown } from 'lucide-react';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
 import ErrorPage from './ErrorPage';
@@ -13,7 +13,7 @@ const TenderList: React.FC = () => {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedProvince, setSelectedProvince] = useState(PROVINCES[0]);
   const [selectedIndustry, setSelectedIndustry] = useState(INDUSTRIES[0]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true); // Default to true for extended view
   const tendersPerPage = 24;
 
   // Debounce the search query
@@ -78,6 +78,17 @@ const TenderList: React.FC = () => {
   const clearSearch = useCallback(() => {
     setSearchQuery('');
     setDebouncedSearchQuery('');
+    setCurrentPage(1);
+  }, []);
+
+  // Individual filter clear functions
+  const clearProvinceFilter = useCallback(() => {
+    setSelectedProvince(PROVINCES[0]);
+    setCurrentPage(1);
+  }, []);
+
+  const clearIndustryFilter = useCallback(() => {
+    setSelectedIndustry(INDUSTRIES[0]);
     setCurrentPage(1);
   }, []);
 
@@ -206,135 +217,224 @@ const TenderList: React.FC = () => {
       </Helmet>
 
       <div className="space-y-4 sm:space-y-6">
-        {/* Search and Filter Section */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-          {/* Search Box */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearchInputChange(e.target.value)}
-              placeholder="Search government opportunities by title, department, or category..."
-              className="block w-full pl-9 sm:pl-10 pr-10 py-2.5 sm:py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            />
-            {searchQuery && (
-              <button
-                onClick={clearSearch}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors"
-              >
-                <X className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
-              </button>
-            )}
-            {(isSearching || isFetching) && (
-              <div className="absolute right-10 sm:right-12 top-1/2 transform -translate-y-1/2">
-                <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
+        {/* Enhanced Search and Filter Section */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+          {/* Main Search Bar */}
+          <div className="p-4 sm:p-6 border-b border-gray-100">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
               </div>
-            )}
-          </div>
-
-          {/* Filter Toggle */}
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm"
-            >
-              <Filter className="w-4 h-4" />
-              <span>Filters</span>
-              {hasActiveFilters && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  Active
-                </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
+                placeholder="Search government opportunities by title, department, or category..."
+                className="block w-full pl-12 pr-12 py-4 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base transition-all duration-200"
+              />
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center hover:text-gray-600 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="h-5 w-5 text-gray-400" />
+                </button>
               )}
-            </button>
+              {(isSearching || isFetching) && (
+                <div className="absolute right-12 top-1/2 transform -translate-y-1/2">
+                  <div className="w-5 h-5 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
+                </div>
+              )}
+            </div>
 
-            {hasActiveFilters && (
+            {/* Filter Toggle and Status */}
+            <div className="flex items-center justify-between mt-4">
               <button
-                onClick={clearAllFilters}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
               >
-                Clear all filters
+                <Filter className="w-4 h-4" />
+                <span>Advanced Filters</span>
+                {showFilters ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+                {hasActiveFilters && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                    Active
+                  </span>
+                )}
               </button>
-            )}
+
+              {/* Search Status */}
+              <div className="text-sm text-gray-600">
+                {searchQuery && (
+                  <>
+                    {isSearching ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
+                        <span>Searching...</span>
+                      </div>
+                    ) : debouncedSearchQuery ? (
+                      <span>
+                        Results for: <span className="font-medium text-gray-900">"{debouncedSearchQuery}"</span>
+                      </span>
+                    ) : (
+                      <span className="text-gray-500">Type to search...</span>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Filter Dropdowns */}
-          {showFilters && (
-            <div className="grid gap-4 sm:grid-cols-2 pt-4 border-t border-gray-200">
-              <div>
-                <label htmlFor="province-filter" className="block text-sm font-medium text-gray-700 mb-2">
-                  <MapPin className="w-4 h-4 inline mr-1" />
-                  Province
-                </label>
-                <select
-                  id="province-filter"
-                  value={selectedProvince}
-                  onChange={(e) => setSelectedProvince(e.target.value)}
-                  className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                >
-                  {PROVINCES.map(province => (
-                    <option key={province} value={province}>{province}</option>
-                  ))}
-                </select>
+          {/* Active Filter Tags */}
+          {hasActiveFilters && (
+            <div className="px-4 sm:px-6 py-4 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100">
+              <div className="flex items-center space-x-2 mb-3">
+                <span className="text-sm font-medium text-gray-700">Active filters:</span>
+                <span className="text-xs text-gray-500">Click any tag to remove</span>
               </div>
-              
-              <div>
-                <label htmlFor="industry-filter" className="block text-sm font-medium text-gray-700 mb-2">
-                  <Briefcase className="w-4 h-4 inline mr-1" />
-                  Industry
-                </label>
-                <select
-                  id="industry-filter"
-                  value={selectedIndustry}
-                  onChange={(e) => setSelectedIndustry(e.target.value)}
-                  className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                >
-                  {INDUSTRIES.map(industry => (
-                    <option key={industry} value={industry}>{industry}</option>
-                  ))}
-                </select>
+              <div className="flex flex-wrap gap-2">
+                {debouncedSearchQuery && (
+                  <div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition-colors cursor-pointer group">
+                    <Search className="w-3 h-3 mr-1.5" />
+                    <span className="font-medium">Search:</span>
+                    <span className="ml-1 max-w-32 truncate">"{debouncedSearchQuery}"</span>
+                    <button
+                      onClick={clearSearch}
+                      className="ml-2 hover:text-blue-600 transition-colors group-hover:bg-blue-300 rounded-full p-0.5"
+                      aria-label="Clear search filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                
+                {selectedProvince !== PROVINCES[0] && (
+                  <div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-green-100 text-green-800 border border-green-200 hover:bg-green-200 transition-colors cursor-pointer group">
+                    <MapPin className="w-3 h-3 mr-1.5" />
+                    <span className="font-medium">Province:</span>
+                    <span className="ml-1">{selectedProvince}</span>
+                    <button
+                      onClick={clearProvinceFilter}
+                      className="ml-2 hover:text-green-600 transition-colors group-hover:bg-green-300 rounded-full p-0.5"
+                      aria-label="Clear province filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+                
+                {selectedIndustry !== INDUSTRIES[0] && (
+                  <div className="inline-flex items-center px-3 py-1.5 rounded-full text-sm bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200 transition-colors cursor-pointer group">
+                    <Briefcase className="w-3 h-3 mr-1.5" />
+                    <span className="font-medium">Industry:</span>
+                    <span className="ml-1">{selectedIndustry}</span>
+                    <button
+                      onClick={clearIndustryFilter}
+                      className="ml-2 hover:text-purple-600 transition-colors group-hover:bg-purple-300 rounded-full p-0.5"
+                      aria-label="Clear industry filter"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Search Status */}
-          {searchQuery && (
-            <div className="text-xs sm:text-sm text-gray-600">
-              {isSearching ? (
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
-                  <span>Searching opportunities...</span>
+          {/* Filter Dropdowns */}
+          {showFilters && (
+            <div className="p-4 sm:p-6 bg-gray-50">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-2">
+                  <label htmlFor="province-filter" className="block text-sm font-medium text-gray-700">
+                    <MapPin className="w-4 h-4 inline mr-1" />
+                    Province
+                  </label>
+                  <select
+                    id="province-filter"
+                    value={selectedProvince}
+                    onChange={(e) => setSelectedProvince(e.target.value)}
+                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm py-2.5 transition-colors bg-white"
+                  >
+                    {PROVINCES.map(province => (
+                      <option key={province} value={province}>{province}</option>
+                    ))}
+                  </select>
                 </div>
-              ) : debouncedSearchQuery ? (
-                <span>
-                  Results for: <span className="font-medium text-gray-900">"{debouncedSearchQuery}"</span>
-                  {selectedProvince !== PROVINCES[0] && (
-                    <span> in <span className="font-medium text-gray-900">{selectedProvince}</span></span>
-                  )}
-                  {selectedIndustry !== INDUSTRIES[0] && (
-                    <span> • <span className="font-medium text-gray-900">{selectedIndustry}</span></span>
-                  )}
-                </span>
-              ) : (
-                <span className="text-gray-500">Type to search...</span>
-              )}
+                
+                <div className="space-y-2">
+                  <label htmlFor="industry-filter" className="block text-sm font-medium text-gray-700">
+                    <Briefcase className="w-4 h-4 inline mr-1" />
+                    Industry
+                  </label>
+                  <select
+                    id="industry-filter"
+                    value={selectedIndustry}
+                    onChange={(e) => setSelectedIndustry(e.target.value)}
+                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm py-2.5 transition-colors bg-white"
+                  >
+                    {INDUSTRIES.map(industry => (
+                      <option key={industry} value={industry}>{industry}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Clear All Filters Button - Only visible when filters are active */}
+                {hasActiveFilters && (
+                  <div className="flex items-end">
+                    <button
+                      onClick={clearAllFilters}
+                      className="flex items-center justify-center space-x-2 w-full px-4 py-2.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 rounded-lg transition-colors font-medium"
+                    >
+                      <X className="w-4 h-4" />
+                      <span>Clear all filters</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Filter Tips */}
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <div className="flex items-start space-x-2 text-xs text-gray-500">
+                  <Zap className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-gray-700 mb-1">Pro Tips:</p>
+                    <ul className="space-y-1">
+                      <li>• Use specific keywords like "IT services" or "construction" for better results</li>
+                      <li>• Combine province and industry filters to find local opportunities</li>
+                      <li>• Check back regularly - new opportunities are added daily</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         {/* Results Summary */}
         {data && data.tenders.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
+          <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-              <p className="text-xs sm:text-sm text-gray-600">
-                Showing <span className="text-gray-900 font-medium">{((currentPage - 1) * tendersPerPage) + 1}</span> to{' '}
-                <span className="text-gray-900 font-medium">{Math.min(currentPage * tendersPerPage, data.pagination.total)}</span> of{' '}
-                <span className="text-gray-900 font-medium">{data.pagination.total.toLocaleString()}</span> opportunities
-                {hasActiveFilters && <span className="text-blue-600"> (filtered)</span>}
-              </p>
-              <p className="text-xs sm:text-sm text-gray-500">
+              <div className="flex items-center space-x-4">
+                <p className="text-sm text-gray-600">
+                  Showing <span className="text-gray-900 font-medium">{((currentPage - 1) * tendersPerPage) + 1}</span> to{' '}
+                  <span className="text-gray-900 font-medium">{Math.min(currentPage * tendersPerPage, data.pagination.total)}</span> of{' '}
+                  <span className="text-gray-900 font-medium">{data.pagination.total.toLocaleString()}</span> opportunities
+                  {hasActiveFilters && <span className="text-blue-600 font-medium"> (filtered)</span>}
+                </p>
+                {hasActiveFilters && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                    <Filter className="w-3 h-3 mr-1" />
+                    Filtered
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-gray-500">
                 Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{data.pagination.totalPages}</span>
               </p>
             </div>
@@ -344,36 +444,36 @@ const TenderList: React.FC = () => {
         {/* Tenders Grid */}
         {!data?.tenders || data.tenders.length === 0 ? (
           <div className="text-center py-12 sm:py-16 px-4">
-            <div className="bg-white rounded-lg border border-gray-200 p-8 sm:p-12 max-w-md mx-auto">
+            <div className="bg-white rounded-xl border border-gray-200 p-8 sm:p-12 max-w-lg mx-auto shadow-sm">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 {hasActiveFilters ? <Search className="w-8 h-8 text-blue-600" /> : <Zap className="w-8 h-8 text-blue-600" />}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
                 {hasActiveFilters ? 'No matching opportunities found' : 'No open opportunities found'}
               </h3>
-              <p className="text-gray-600 mb-4 text-sm">
+              <p className="text-gray-600 mb-6 text-sm leading-relaxed">
                 {hasActiveFilters 
-                  ? `No government opportunities match your current filters. Try adjusting your search criteria or explore all opportunities.`
+                  ? `No government opportunities match your current search criteria. Try adjusting your filters or exploring all available opportunities.`
                   : 'No open government opportunities are currently available. Check back soon for new procurement opportunities!'
                 }
               </p>
               {hasActiveFilters && (
                 <button
                   onClick={clearAllFilters}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium text-sm"
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium text-sm shadow-sm"
                 >
                   Clear Filters & Explore All
                 </button>
               )}
               
               {/* Encouragement */}
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <div className="flex items-center justify-center space-x-2 mb-2">
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <div className="flex items-center justify-center space-x-2 mb-3">
                   <Zap className="w-4 h-4 text-blue-600" />
                   <span className="text-sm font-medium text-gray-900">BidBase Tip</span>
                 </div>
-                <p className="text-sm text-gray-500">
-                  New opportunities are added regularly. Use filters to find opportunities that match your business expertise!
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  New opportunities are added regularly. Use our advanced filters to find opportunities that match your business expertise and location preferences!
                 </p>
               </div>
             </div>
@@ -398,12 +498,12 @@ const TenderList: React.FC = () => {
 
             {/* Pagination Controls */}
             {data.pagination.totalPages > 1 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <button
                     onClick={goToPrevious}
                     disabled={currentPage === 1 || isFetching}
-                    className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+                    className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
                   >
                     <ChevronLeft className="w-4 h-4" />
                     <span className="hidden sm:inline">Previous</span>
@@ -411,16 +511,16 @@ const TenderList: React.FC = () => {
                   </button>
 
                   <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(3, data.pagination.totalPages) }, (_, i) => {
+                    {Array.from({ length: Math.min(5, data.pagination.totalPages) }, (_, i) => {
                       let pageNum;
-                      if (data.pagination.totalPages <= 3) {
+                      if (data.pagination.totalPages <= 5) {
                         pageNum = i + 1;
-                      } else if (currentPage <= 2) {
+                      } else if (currentPage <= 3) {
                         pageNum = i + 1;
-                      } else if (currentPage >= data.pagination.totalPages - 1) {
-                        pageNum = data.pagination.totalPages - 2 + i;
+                      } else if (currentPage >= data.pagination.totalPages - 2) {
+                        pageNum = data.pagination.totalPages - 4 + i;
                       } else {
-                        pageNum = currentPage - 1 + i;
+                        pageNum = currentPage - 2 + i;
                       }
 
                       return (
@@ -428,9 +528,9 @@ const TenderList: React.FC = () => {
                           key={pageNum}
                           onClick={() => goToPage(pageNum)}
                           disabled={isFetching}
-                          className={`px-2 sm:px-3 py-2 rounded-md transition-colors font-medium text-sm disabled:opacity-50 ${
+                          className={`px-3 py-2 rounded-lg transition-colors font-medium text-sm disabled:opacity-50 ${
                             currentPage === pageNum
-                              ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                              ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm'
                               : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
                           }`}
                         >
@@ -439,13 +539,13 @@ const TenderList: React.FC = () => {
                       );
                     })}
                     
-                    {data.pagination.totalPages > 3 && currentPage < data.pagination.totalPages - 1 && (
+                    {data.pagination.totalPages > 5 && currentPage < data.pagination.totalPages - 2 && (
                       <>
-                        <span className="px-1 sm:px-2 text-gray-400 text-sm">...</span>
+                        <span className="px-2 text-gray-400 text-sm">...</span>
                         <button
                           onClick={() => goToPage(data.pagination.totalPages)}
                           disabled={isFetching}
-                          className="px-2 sm:px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm disabled:opacity-50"
+                          className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700 text-sm disabled:opacity-50"
                         >
                           {data.pagination.totalPages}
                         </button>
@@ -456,7 +556,7 @@ const TenderList: React.FC = () => {
                   <button
                     onClick={goToNext}
                     disabled={currentPage === data.pagination.totalPages || isFetching}
-                    className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+                    className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
                   >
                     <span className="hidden sm:inline">Next</span>
                     <span className="sm:hidden">Next</span>

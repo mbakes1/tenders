@@ -146,19 +146,27 @@ const TenderDetail: React.FC = () => {
                   <span className="text-sm font-medium text-blue-600">Government Opportunity</span>
                 </div>
                 
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 leading-tight">
-                  {tender.title || 'Untitled Opportunity'}
+                {/* Procuring Entity as main title */}
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 leading-tight">
+                  {tender.buyer || tender.department || 'Government Entity'}
                 </h1>
+                
+                {/* Tender title as subtitle */}
+                {tender.title && (
+                  <h2 className="text-lg sm:text-xl text-gray-700 mb-4 leading-relaxed">
+                    {tender.title}
+                  </h2>
+                )}
                 
                 <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-4">
                   <div className="flex items-center space-x-1">
                     <Tag className="w-4 h-4" />
                     <span className="font-mono">{tender.ocid}</span>
                   </div>
-                  {tender.bid_number && (
+                  {(tender.bid_number || tender.reference_number) && (
                     <div className="flex items-center space-x-1">
                       <FileCheck className="w-4 h-4" />
-                      <span>{tender.bid_number}</span>
+                      <span>Ref: {tender.bid_number || tender.reference_number}</span>
                     </div>
                   )}
                 </div>
@@ -311,7 +319,7 @@ const TenderDetail: React.FC = () => {
               </div>
             </section>
 
-            {/* Buyer Information */}
+            {/* Government Department Information */}
             <section>
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                 <Building className="w-5 h-5 mr-2 text-blue-600" />

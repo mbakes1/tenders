@@ -107,7 +107,8 @@ export const useIsAdmin = () => {
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
-    retry: 1,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 };
 
@@ -117,11 +118,15 @@ export const useAdminStats = () => {
     queryKey: queryKeys.adminStats(),
     queryFn: async () => {
       const result = await getAdminStats();
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
       return result.data;
     },
     staleTime: 1 * 60 * 1000, // 1 minute
     gcTime: 5 * 60 * 1000, // 5 minutes
-    retry: 2,
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
   });
 };
 
@@ -130,11 +135,14 @@ export const useRecentActivity = (limit: number = 10) => {
     queryKey: queryKeys.recentActivity(limit),
     queryFn: async () => {
       const result = await getRecentActivity(limit);
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
       return result.data || [];
     },
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 2 * 60 * 1000, // 2 minutes
-    retry: 1,
+    retry: 2,
   });
 };
 
@@ -239,6 +247,12 @@ export const useCacheUtils = () => {
       queryClient.invalidateQueries({ 
         predicate: (query) => query.queryKey[0] === 'is-bookmarked'
       });
+    },
+    
+    // Invalidate admin data (useful for admin operations)
+    invalidateAdminData: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.adminStats() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recentActivity(15) });
     },
     
     // Get cached data without triggering a fetch

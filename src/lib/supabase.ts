@@ -124,20 +124,54 @@ export const getCurrentUser = async () => {
   }
 };
 
-// Admin helper functions
+// Admin helper functions with enhanced error handling
 export const checkAdminStatus = async () => {
-  const { data, error } = await supabase.rpc('is_admin');
-  return { isAdmin: data || false, error };
+  try {
+    const { data, error } = await supabase.rpc('is_admin');
+    if (error) {
+      console.error('Admin check error:', error);
+      return { isAdmin: false, error };
+    }
+    return { isAdmin: data || false, error: null };
+  } catch (err) {
+    console.error('Admin check exception:', err);
+    return { 
+      isAdmin: false, 
+      error: { message: err instanceof Error ? err.message : 'Failed to check admin status' } 
+    };
+  }
 };
 
 export const getAdminStats = async () => {
-  const { data, error } = await supabase.rpc('get_admin_stats');
-  return { data: data?.[0] || null, error };
+  try {
+    const { data, error } = await supabase.rpc('get_admin_stats');
+    if (error) {
+      console.error('Admin stats error:', error);
+      throw new Error(`Failed to get admin stats: ${error.message}`);
+    }
+    return { data: data?.[0] || null, error: null };
+  } catch (err) {
+    return { 
+      data: null, 
+      error: { message: err instanceof Error ? err.message : 'Failed to get admin stats' } 
+    };
+  }
 };
 
 export const getRecentActivity = async (limit = 10) => {
-  const { data, error } = await supabase.rpc('get_recent_activity', { limit_count: limit });
-  return { data: data || [], error };
+  try {
+    const { data, error } = await supabase.rpc('get_recent_activity', { limit_count: limit });
+    if (error) {
+      console.error('Recent activity error:', error);
+      throw new Error(`Failed to get recent activity: ${error.message}`);
+    }
+    return { data: data || [], error: null };
+  } catch (err) {
+    return { 
+      data: [], 
+      error: { message: err instanceof Error ? err.message : 'Failed to get recent activity' } 
+    };
+  }
 };
 
 // Tender data functions - Updated to use Edge Function
@@ -339,7 +373,11 @@ export const performHealthCheck = async () => {
       return { 
         status: 'error', 
         message: 'Database connectivity failed', 
-        error: connectivityError 
+        error: connectivityError,
+        checks: {
+          connectivity: false,
+          statistics: false
+        }
       };
     }
 
@@ -349,14 +387,22 @@ export const performHealthCheck = async () => {
 
     if (statsError) {
       console.warn('Statistics function failed:', statsError);
+      return {
+        status: 'warning',
+        message: 'Database connected but some functions unavailable',
+        checks: {
+          connectivity: true,
+          statistics: false
+        }
+      };
     }
 
     return {
       status: 'healthy',
       message: 'All systems operational',
       checks: {
-        connectivity: !connectivityError,
-        statistics: !statsError,
+        connectivity: true,
+        statistics: true,
         stats: stats?.[0] || null
       }
     };
@@ -364,7 +410,11 @@ export const performHealthCheck = async () => {
     return {
       status: 'error',
       message: 'Health check failed',
-      error
+      error,
+      checks: {
+        connectivity: false,
+        statistics: false
+      }
     };
   }
 };
@@ -372,7 +422,7 @@ export const performHealthCheck = async () => {
 // Function to manually trigger incremental sync (for admin use)
 export const triggerDataSync = async () => {
   try {
-    const { data, error } = await supabase.functions.invoke('scheduler', {
+    const { data, error } = await supabase.functions.invoke('sync-tenders', {
       method: 'POST'
     });
 
@@ -380,10 +430,14 @@ export const triggerDataSync = async () => {
       throw new Error(`Sync failed: ${error.message}`);
     }
 
-    return { success: true, data };
+    return { success: true, data, syncType: data?.syncType || 'incremental' };
   } catch (error) {
     console.error('Manual sync failed:', error);
-    return { success: false, error };
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Sync failed',
+      syncType: 'incremental'
+    };
   }
 };
 
@@ -398,23 +452,36 @@ export const triggerFullResync = async () => {
       throw new Error(`Full re-sync failed: ${error.message}`);
     }
 
-    return { success: true, data };
+    return { success: true, data, syncType: 'full_resync' };
   } catch (error) {
     console.error('Manual full re-sync failed:', error);
-    return { success: false, error };
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Full re-sync failed',
+      syncType: 'full_resync'
+    };
   }
 };
 
 // Function to get sync statistics (for admin monitoring)
 export const getSyncStatistics = async () => {
   try {
-    const { data, error } = await supabase.rpc('get_sync_statistics');
+    const { data, error } = await supabase
+      .from('fetch_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
     
     if (error) {
+      if (error.code === 'PGRST116') {
+        // No sync logs found
+        return { data: null, error: null };
+      }
       throw new Error(`Failed to get sync statistics: ${error.message}`);
     }
 
-    return { data: data?.[0] || null, error: null };
+    return { data, error: null };
   } catch (err) {
     return { 
       data: null, 

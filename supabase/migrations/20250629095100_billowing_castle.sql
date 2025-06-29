@@ -1,0 +1,105 @@
+/*
+  # Remove View Tracking Feature
+
+  1. Drop Tables
+    - Drop `tender_views` table and all related indexes
+    - Remove `view_count` column from `tenders` table
+
+  2. Drop Functions
+    - Drop all view tracking related functions
+    - Drop view statistics functions
+    - Update admin stats function to remove view-related data
+
+  3. Update Policies
+    - Remove view-related policies
+    - Clean up any references to view tracking
+
+  4. Clean Up
+    - Remove any triggers related to view counting
+    - Remove indexes that were only used for view tracking
+*/
+
+-- Drop the tender_views table completely
+DROP TABLE IF EXISTS tender_views CASCADE;
+
+-- Remove view_count column from tenders table
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'tenders' AND column_name = 'view_count'
+  ) THEN
+    ALTER TABLE tenders DROP COLUMN view_count;
+  END IF;
+END $$;
+
+-- Drop view tracking functions
+DROP FUNCTION IF EXISTS increment_tender_view(text, text, text, uuid) CASCADE;
+DROP FUNCTION IF EXISTS get_tender_view_stats(text) CASCADE;
+DROP FUNCTION IF EXISTS get_popular_tenders(integer, integer) CASCADE;
+
+-- Update admin stats function to remove view-related data
+CREATE OR REPLACE FUNCTION get_admin_stats()
+RETURNS TABLE (
+  total_users bigint,
+  total_tenders bigint,
+  open_tenders bigint,
+  total_bookmarks bigint,
+  last_sync timestamp with time zone
+) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    (SELECT COUNT(*) FROM auth.users) as total_users,
+    (SELECT COUNT(*) FROM tenders) as total_tenders,
+    (SELECT COUNT(*) FROM tenders WHERE close_date > NOW()) as open_tenders,
+    (SELECT COUNT(*) FROM bookmarks) as total_bookmarks,
+    (SELECT MAX(created_at) FROM fetch_logs) as last_sync;
+END;
+$$;
+
+-- Update recent activity function to remove view-related activities
+CREATE OR REPLACE FUNCTION get_recent_activity(limit_count integer DEFAULT 10)
+RETURNS TABLE (
+  activity_type text,
+  description text,
+  created_at timestamp with time zone
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    'bookmark'::text as activity_type,
+    'User bookmarked tender: ' || t.title as description,
+    b.created_at
+  FROM bookmarks b
+  JOIN tenders t ON b.tender_ocid = t.ocid
+  ORDER BY b.created_at DESC
+  LIMIT limit_count;
+END;
+$$;
+
+-- Remove any view-related indexes that might still exist
+DROP INDEX IF EXISTS idx_tender_views_created_at;
+DROP INDEX IF EXISTS idx_tender_views_date_range;
+DROP INDEX IF EXISTS idx_tender_views_ip_time;
+DROP INDEX IF EXISTS idx_tender_views_ocid;
+DROP INDEX IF EXISTS idx_tender_views_user_id;
+DROP INDEX IF EXISTS idx_tenders_view_count;
+
+-- Clean up any remaining view-related constraints
+DO $$
+BEGIN
+  -- Remove view count constraint if it exists
+  IF EXISTS (
+    SELECT 1 FROM information_schema.table_constraints 
+    WHERE constraint_name = 'tenders_view_count_positive'
+  ) THEN
+    ALTER TABLE tenders DROP CONSTRAINT tenders_view_count_positive;
+  END IF;
+END $$;

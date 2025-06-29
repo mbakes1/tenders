@@ -3,7 +3,6 @@ import {
   Shield, 
   Database, 
   Users, 
-  Eye, 
   Bookmark, 
   RefreshCw, 
   Activity,
@@ -86,7 +85,8 @@ const AdminDashboard: React.FC = () => {
     });
   };
 
-  const formatNumber = (num: number) => {
+  const formatNumber = (num: number | null | undefined) => {
+    if (num === null || num === undefined) return '0';
     return num.toLocaleString();
   };
 
@@ -217,7 +217,7 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {/* Stats Grid */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -226,7 +226,7 @@ const AdminDashboard: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Total Users</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatNumber(stats?.total_users ?? 0)}
+                {formatNumber(stats?.total_users)}
               </p>
             </div>
           </div>
@@ -240,24 +240,10 @@ const AdminDashboard: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Total Tenders</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatNumber(stats?.total_tenders ?? 0)}
+                {formatNumber(stats?.total_tenders)}
               </p>
               <p className="text-xs text-green-600">
-                {formatNumber(stats?.open_tenders ?? 0)} open
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Eye className="w-4 h-4 text-purple-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Total Views</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {formatNumber(stats?.total_views ?? 0)}
+                {formatNumber(stats?.open_tenders)} open
               </p>
             </div>
           </div>
@@ -271,7 +257,7 @@ const AdminDashboard: React.FC = () => {
             <div>
               <p className="text-sm text-gray-600">Total Bookmarks</p>
               <p className="text-2xl font-bold text-gray-900">
-                {formatNumber(stats?.total_bookmarks ?? 0)}
+                {formatNumber(stats?.total_bookmarks)}
               </p>
             </div>
           </div>
@@ -309,13 +295,9 @@ const AdminDashboard: React.FC = () => {
             {recentActivity.map((activity, index) => (
               <div key={index} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  activity.activity_type === 'tender_view' ? 'bg-blue-100' : 'bg-orange-100'
+                  activity.activity_type === 'bookmark' ? 'bg-orange-100' : 'bg-blue-100'
                 }`}>
-                  {activity.activity_type === 'tender_view' ? (
-                    <Eye className="w-3 h-3 text-blue-600" />
-                  ) : (
-                    <Bookmark className="w-3 h-3 text-orange-600" />
-                  )}
+                  <Bookmark className="w-3 h-3 text-orange-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-900 truncate">{activity.description}</p>

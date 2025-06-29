@@ -18,7 +18,6 @@ export type TablesUpdate<T extends keyof Database['public']['Tables']> = Databas
 // Specific type exports for commonly used tables
 export type Tender = Tables<'tenders'>;
 export type Bookmark = Tables<'bookmarks'>;
-export type TenderView = Tables<'tender_views'>;
 export type FetchLog = Tables<'fetch_logs'>;
 
 // Auth helper functions with improved error handling
@@ -305,6 +304,7 @@ export const getUserBookmarks = async (page = 1, limit = 24): Promise<{ data: Te
     if (userError || !userData.user) {
       throw new Error('You must be signed in to view bookmarks');
     }
+    const user = userData.user;
 
     const offset = (page - 1) * limit;
     const { data, error } = await supabase
@@ -324,52 +324,6 @@ export const getUserBookmarks = async (page = 1, limit = 24): Promise<{ data: Te
       error: { message: err instanceof Error ? err.message : 'Failed to fetch bookmarks' } 
     };
   }
-};
-
-// View tracking helper functions
-export const trackTenderView = async (tenderOcid: string) => {
-  try {
-    // Validate OCID
-    if (!tenderOcid || typeof tenderOcid !== 'string' || tenderOcid.trim().length === 0) {
-      return { success: false, viewCount: 0 };
-    }
-
-    const { data, error } = await supabase.functions.invoke('track-view', {
-      body: {
-        tenderOcid: tenderOcid.trim(),
-        userAgent: navigator.userAgent
-      }
-    });
-
-    if (error) {
-      console.error('Failed to track view:', error);
-      return { success: false, viewCount: 0 };
-    }
-
-    return {
-      success: data.success,
-      viewCount: data.viewCount,
-      viewRecorded: data.viewRecorded
-    };
-  } catch (error) {
-    console.error('Error tracking view:', error);
-    return { success: false, viewCount: 0 };
-  }
-};
-
-export const getTenderViewStats = async (tenderOcid: string) => {
-  const { data, error } = await supabase
-    .rpc('get_tender_view_stats', { p_tender_ocid: tenderOcid });
-  return { data: data?.[0] || null, error };
-};
-
-export const getPopularTenders = async (limit = 10, daysBack = 7) => {
-  const { data, error } = await supabase
-    .rpc('get_popular_tenders', { 
-      limit_count: limit, 
-      days_back: daysBack 
-    });
-  return { data, error };
 };
 
 // Health check function to validate system status

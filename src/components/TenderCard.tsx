@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Calendar, Building, ExternalLink, Clock, AlertTriangle, Eye } from 'lucide-react';
+import { Calendar, Building, ExternalLink, Clock, AlertTriangle } from 'lucide-react';
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
 import { useCacheUtils } from '../lib/queries';
@@ -28,16 +28,6 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
     const diffTime = end.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
-  };
-
-  const formatViewCount = (count: number | null) => {
-    if (!count || count === 0) return '0';
-    if (count >= 1000000) {
-      return `${(count / 1000000).toFixed(1)}M`;
-    } else if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}K`;
-    }
-    return count.toString();
   };
 
   const daysUntilClose = tender.close_date
@@ -69,8 +59,6 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
     }
   };
 
-  const viewCount = tender.view_count || 0;
-
   return (
     <>
       <div 
@@ -90,12 +78,6 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
                 <span className="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-200">
                   {tender.category}
                 </span>
-              )}
-              {viewCount > 0 && (
-                <div className="flex items-center space-x-1 px-2 py-1 bg-gray-50 text-gray-600 rounded text-xs font-medium border border-gray-200">
-                  <Eye className="w-3 h-3" />
-                  <span>{formatViewCount(viewCount)}</span>
-                </div>
               )}
             </div>
           </div>

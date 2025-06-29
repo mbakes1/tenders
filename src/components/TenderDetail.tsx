@@ -13,8 +13,6 @@ import {
   Tag,
   AlertCircle,
   Download,
-  Eye,
-  TrendingUp,
   User,
   Globe,
   Briefcase,
@@ -25,7 +23,7 @@ import {
 import SkeletonDetail from './SkeletonDetail';
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
-import { useTender, useTenderStats, useTrackView, useCacheUtils } from '../lib/queries';
+import { useTender, useCacheUtils } from '../lib/queries';
 import { downloadDocumentProxy, type Tender } from '../lib/supabase';
 
 const TenderDetail: React.FC = () => {
@@ -43,19 +41,6 @@ const TenderDetail: React.FC = () => {
     error
   } = useTender(decodedOcid);
 
-  const {
-    data: viewStats
-  } = useTenderStats(decodedOcid);
-
-  const trackViewMutation = useTrackView();
-
-  // Track view when component mounts
-  React.useEffect(() => {
-    if (decodedOcid && tender) {
-      trackViewMutation.mutate(decodedOcid);
-    }
-  }, [decodedOcid, tender, trackViewMutation]);
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-ZA', {
       year: 'numeric',
@@ -72,18 +57,6 @@ const TenderDetail: React.FC = () => {
     const diffTime = end.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
-  };
-
-  const formatViewCount = (count: number | null | undefined) => {
-    // Ensure count is a valid number, default to 0 if not
-    const validCount = typeof count === 'number' ? count : 0;
-    
-    if (validCount >= 1000000) {
-      return `${(validCount / 1000000).toFixed(1)}M`;
-    } else if (validCount >= 1000) {
-      return `${(validCount / 1000).toFixed(1)}K`;
-    }
-    return validCount.toString();
   };
 
   const downloadDocument = async (doc: any) => {
@@ -143,7 +116,6 @@ const TenderDetail: React.FC = () => {
   const tenderData = tender.full_data?.tender || tender.full_data || tender;
   const closeDate = tender.close_date;
   const daysUntilClose = closeDate ? getDaysUntilClose(closeDate) : null;
-  const viewCount = tender.view_count || 0;
 
   return (
     <>
@@ -181,18 +153,6 @@ const TenderDetail: React.FC = () => {
                     <div className="flex items-center space-x-1">
                       <FileCheck className="w-4 h-4" />
                       <span>{tender.bid_number}</span>
-                    </div>
-                  )}
-                  {viewCount > 0 && (
-                    <div className="flex items-center space-x-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-md">
-                      <Eye className="w-4 h-4" />
-                      <span className="font-medium">{formatViewCount(viewCount)} views</span>
-                    </div>
-                  )}
-                  {viewStats && (
-                    <div className="flex items-center space-x-1 px-2 py-1 bg-gray-100 text-gray-600 rounded-md">
-                      <TrendingUp className="w-4 h-4" />
-                      <span>{viewStats.views_today} today</span>
                     </div>
                   )}
                 </div>
@@ -515,34 +475,6 @@ const TenderDetail: React.FC = () => {
                 </h2>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{tender.special_conditions}</p>
-                </div>
-              </section>
-            )}
-
-            {/* View Statistics */}
-            {viewStats && (
-              <section className="border-t border-gray-200 pt-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                  <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                  View Statistics
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">{formatViewCount(viewStats.total_views)}</p>
-                    <p className="text-sm text-gray-600">Total Views</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">{formatViewCount(viewStats.unique_viewers)}</p>
-                    <p className="text-sm text-gray-600">Unique Viewers</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">{viewStats.views_today}</p>
-                    <p className="text-sm text-gray-600">Today</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-gray-900">{viewStats.views_this_week}</p>
-                    <p className="text-sm text-gray-600">This Week</p>
-                  </div>
                 </div>
               </section>
             )}

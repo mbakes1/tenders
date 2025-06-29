@@ -6,8 +6,6 @@ import {
   removeBookmark, 
   checkIfBookmarked, 
   getUserBookmarks,
-  trackTenderView,
-  getTenderViewStats,
   getCurrentUser,
   checkAdminStatus,
   getAdminStats,
@@ -20,7 +18,6 @@ export const queryKeys = {
   // Tenders
   tenders: (page: number, search: string, limit: number) => ['tenders', { page, search, limit }] as const,
   tender: (ocid: string) => ['tender', ocid] as const,
-  tenderStats: (ocid: string) => ['tender-stats', ocid] as const,
   
   // Bookmarks
   bookmarks: (page: number, limit: number) => ['bookmarks', { page, limit }] as const,
@@ -56,20 +53,6 @@ export const useTender = (ocid: string, options?: Partial<UseQueryOptions<Tender
     enabled: !!ocid,
     retry: 2,
     ...options,
-  });
-};
-
-export const useTenderStats = (ocid: string) => {
-  return useQuery({
-    queryKey: queryKeys.tenderStats(ocid),
-    queryFn: async () => {
-      const result = await getTenderViewStats(ocid);
-      return result.data;
-    },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes
-    enabled: !!ocid,
-    retry: 1,
   });
 };
 
@@ -225,30 +208,6 @@ export const useRemoveBookmark = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.isBookmarked(ocid) });
       queryClient.invalidateQueries({ queryKey: queryKeys.bookmarks(1, 24) });
     },
-  });
-};
-
-// View Tracking Mutation
-export const useTrackView = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: trackTenderView,
-    onSuccess: (data, ocid) => {
-      // Update tender view count in cache if available
-      if (data.success && data.viewCount) {
-        queryClient.setQueryData(queryKeys.tender(ocid), (oldData: Tender | undefined) => {
-          if (oldData) {
-            return { ...oldData, view_count: data.viewCount };
-          }
-          return oldData;
-        });
-        
-        // Invalidate view stats to get fresh data
-        queryClient.invalidateQueries({ queryKey: queryKeys.tenderStats(ocid) });
-      }
-    },
-    retry: 1, // Only retry once for view tracking
   });
 };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { 
   ArrowLeft, 
   Calendar, 
@@ -87,29 +88,110 @@ const TenderDetail: React.FC = () => {
     setShowAuthModal(false);
   };
 
+  // Generate SEO-optimized meta data
+  const generateMetaData = (tender: Tender) => {
+    const procuringEntity = tender.buyer || tender.department || 'Government Entity';
+    const tenderTitle = tender.title || 'Government Opportunity';
+    const category = tender.category || 'Government Procurement';
+    const refNumber = tender.bid_number || tender.reference_number || tender.ocid;
+    
+    // Create SEO-optimized title (max 60 characters for optimal display)
+    const pageTitle = `${procuringEntity} - ${tenderTitle} | BidBase`.substring(0, 60);
+    
+    // Create compelling meta description (max 160 characters)
+    const description = tender.description || tender.bid_description || '';
+    const metaDescription = description 
+      ? `${description.substring(0, 120)}... Apply now on BidBase.`
+      : `Government opportunity from ${procuringEntity}. ${category} tender closing ${tender.close_date ? new Date(tender.close_date).toLocaleDateString('en-ZA') : 'soon'}. Apply on BidBase.`;
+    
+    // Generate keywords for better discoverability
+    const keywords = [
+      'government tender',
+      'public procurement',
+      'business opportunity',
+      procuringEntity.toLowerCase(),
+      category.toLowerCase(),
+      'south africa',
+      'bidbase',
+      'government contract',
+      'tender application'
+    ].filter(Boolean).join(', ');
+
+    // Create structured data for rich snippets
+    const structuredData = {
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      "title": tenderTitle,
+      "description": description || `Government procurement opportunity from ${procuringEntity}`,
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": procuringEntity,
+        "sameAs": "https://bidbase.co.za"
+      },
+      "jobLocation": {
+        "@type": "Place",
+        "addressLocality": tender.service_location || "South Africa",
+        "addressCountry": "ZA"
+      },
+      "datePosted": tender.opening_date || tender.created_at,
+      "validThrough": tender.close_date,
+      "employmentType": "CONTRACT",
+      "industry": category,
+      "identifier": {
+        "@type": "PropertyValue",
+        "name": "Reference Number",
+        "value": refNumber
+      },
+      "url": `https://bidbase.co.za/tender/${encodeURIComponent(tender.ocid)}`
+    };
+
+    return {
+      title: pageTitle,
+      description: metaDescription.substring(0, 160),
+      keywords,
+      structuredData,
+      canonical: `https://bidbase.co.za/tender/${encodeURIComponent(tender.ocid)}`
+    };
+  };
+
   if (isLoading) {
-    return <SkeletonDetail />;
+    return (
+      <>
+        <Helmet>
+          <title>Loading Opportunity | BidBase</title>
+          <meta name="description" content="Loading government procurement opportunity details..." />
+        </Helmet>
+        <SkeletonDetail />
+      </>
+    );
   }
 
   if (isError || !tender) {
     return (
-      <div className="text-center py-12 px-4">
-        <div className="bg-white border border-red-200 rounded-lg p-6 max-w-md mx-auto">
-          <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-6 h-6 text-red-600" />
+      <>
+        <Helmet>
+          <title>Opportunity Not Found | BidBase</title>
+          <meta name="description" content="The requested government opportunity could not be found. Explore other procurement opportunities on BidBase." />
+          <meta name="robots" content="noindex, nofollow" />
+        </Helmet>
+        <div className="text-center py-12 px-4">
+          <div className="bg-white border border-red-200 rounded-lg p-6 max-w-md mx-auto">
+            <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Opportunity not found</h3>
+            <p className="text-red-600 text-sm mb-4">
+              {error instanceof Error ? error.message : 'An error occurred while loading this opportunity'}
+            </p>
+            <Link
+              to="/"
+              className="inline-block px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium"
+            >
+              Back to Opportunities
+            </Link>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Opportunity not found</h3>
-          <p className="text-red-600 text-sm mb-4">
-            {error instanceof Error ? error.message : 'An error occurred while loading this opportunity'}
-          </p>
-          <Link
-            to="/"
-            className="inline-block px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium"
-          >
-            Back to Opportunities
-          </Link>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -117,9 +199,65 @@ const TenderDetail: React.FC = () => {
   const tenderData = tender.full_data?.tender || tender.full_data || tender;
   const closeDate = tender.close_date;
   const daysUntilClose = closeDate ? getDaysUntilClose(closeDate) : null;
+  
+  // Generate meta data for SEO
+  const metaData = generateMetaData(tender);
 
   return (
     <>
+      <Helmet>
+        <title>{metaData.title}</title>
+        <meta name="description" content={metaData.description} />
+        <meta name="keywords" content={metaData.keywords} />
+        <link rel="canonical" href={metaData.canonical} />
+        
+        {/* Open Graph / Facebook */}
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={metaData.title} />
+        <meta property="og:description" content={metaData.description} />
+        <meta property="og:url" content={metaData.canonical} />
+        <meta property="og:site_name" content="BidBase" />
+        <meta property="article:published_time" content={tender.opening_date || tender.created_at} />
+        <meta property="article:modified_time" content={tender.updated_at} />
+        <meta property="article:expiration_time" content={tender.close_date} />
+        <meta property="article:section" content={tender.category || 'Government Procurement'} />
+        <meta property="article:tag" content="government tender" />
+        <meta property="article:tag" content="public procurement" />
+        <meta property="article:tag" content={tender.category || 'procurement'} />
+        
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={metaData.title} />
+        <meta name="twitter:description" content={metaData.description} />
+        <meta name="twitter:url" content={metaData.canonical} />
+        
+        {/* Additional SEO meta tags */}
+        <meta name="author" content="BidBase" />
+        <meta name="publisher" content="BidBase" />
+        <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+        
+        {/* Structured Data for Rich Snippets */}
+        <script type="application/ld+json">
+          {JSON.stringify(metaData.structuredData)}
+        </script>
+        
+        {/* Additional structured data for organization */}
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": "BidBase",
+            "description": "Government procurement made simple for emerging businesses",
+            "url": "https://bidbase.co.za",
+            "logo": "https://bidbase.co.za/logo.png",
+            "sameAs": [
+              "https://twitter.com/bidbase",
+              "https://linkedin.com/company/bidbase"
+            ]
+          })}
+        </script>
+      </Helmet>
+
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Back Navigation */}
         <Link

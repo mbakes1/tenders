@@ -1,7 +1,6 @@
 import React from 'react';
 import { FallbackProps } from 'react-error-boundary';
 import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 export function GlobalErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
   // Log the error for debugging (in production, you'd send this to a service like Sentry)
@@ -66,6 +65,12 @@ export function GlobalErrorFallback({ error, resetErrorBoundary }: FallbackProps
     }
   };
 
+  const handleGoHome = () => {
+    // Use window.location to navigate home instead of React Router Link
+    // This ensures navigation works even when router context is not available
+    window.location.href = '/';
+  };
+
   const handleReportError = () => {
     // In production, you could send this to an error reporting service
     const errorReport = {
@@ -114,13 +119,13 @@ export function GlobalErrorFallback({ error, resetErrorBoundary }: FallbackProps
 
           {/* Secondary Actions */}
           <div className="flex space-x-3">
-            <Link
-              to="/"
+            <button
+              onClick={handleGoHome}
               className={`flex-1 inline-flex items-center justify-center px-4 py-2 border ${config.borderColor} text-sm font-medium rounded-lg ${config.iconColor} bg-white hover:bg-gray-50 transition-colors`}
             >
               <Home className="w-4 h-4 mr-2" />
               Go Home
-            </Link>
+            </button>
             
             {config.showTechnicalDetails && (
               <button

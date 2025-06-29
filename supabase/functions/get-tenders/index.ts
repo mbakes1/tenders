@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
     // Build standard query for non-search requests
     let query = supabase
       .from('tenders')
-      .select('*, view_count', { count: 'exact' });
+      .select('*', { count: 'exact' });
     
     // Filter for open tenders only if requested
     if (openOnly) {

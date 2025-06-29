@@ -69,9 +69,16 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0 pr-3">
             <Link to={`/tender/${encodeURIComponent(tender.ocid)}`} className="group">
+              {/* Procuring Entity as main title */}
               <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 text-sm sm:text-base leading-snug mb-2">
-                {tender.title || 'Untitled Tender'}
+                {tender.buyer || tender.department || 'Government Entity'}
               </h3>
+              {/* Tender title as subtitle */}
+              {tender.title && (
+                <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed mb-2">
+                  {tender.title}
+                </p>
+              )}
             </Link>
             <div className="flex flex-wrap items-center gap-2 mb-2">
               {tender.category && (
@@ -91,21 +98,23 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
         </div>
 
         {/* Description */}
-        {tender.description && (
+        {(tender.description || tender.bid_description) && (
           <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed flex-1">
-            {tender.description}
+            {tender.description || tender.bid_description}
           </p>
         )}
 
         {/* Details */}
         <div className="space-y-3 mt-auto">
-          {/* Buyer */}
-          {tender.buyer && (
+          {/* Reference Number */}
+          {(tender.bid_number || tender.reference_number) && (
             <div className="flex items-center text-sm text-gray-600">
               <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-100 rounded flex items-center justify-center mr-2 flex-shrink-0">
                 <Building className="w-3 h-3 text-gray-500" />
               </div>
-              <span className="truncate font-medium text-xs sm:text-sm">{tender.buyer}</span>
+              <span className="truncate font-medium text-xs sm:text-sm">
+                Ref: {tender.bid_number || tender.reference_number}
+              </span>
             </div>
           )}
 

@@ -7,8 +7,8 @@ interface GetTendersRequest {
   page?: number;
   limit?: number;
   search?: string;
-  province?: string;
-  industry?: string;
+  province?: string | null; // Allow null
+  industry?: string | null; // Allow null
 }
 
 Deno.serve(async (req) => {
@@ -31,20 +31,22 @@ Deno.serve(async (req) => {
     const page = requestBody.page || 1;
     const limit = requestBody.limit || 24;
     const searchQuery = requestBody.search || '';
-    const province = requestBody.province || 'All Provinces';
-    const industry = requestBody.industry || 'All Industries';
+    
+    // Directly use the provided values, which can be null
+    const province = requestBody.province; 
+    const industry = requestBody.industry;
     
     console.log('Request parameters:', { page, limit, searchQuery, province, industry });
     
     // Calculate offset
     const offset = (page - 1) * limit;
     
-    // Use the new comprehensive filtering function
+    // Use the comprehensive filtering function. The SQL function already handles nulls correctly.
     const { data: results, error: filterError } = await supabase
       .rpc('filter_tenders', {
         p_search_term: searchQuery.trim(),
-        p_province: province === 'All Provinces' ? null : province,
-        p_industry: industry === 'All Industries' ? null : industry,
+        p_province: province, // Pass province directly (can be null)
+        p_industry: industry, // Pass industry directly (can be null)
         p_limit: limit,
         p_offset: offset
       });
@@ -89,7 +91,7 @@ Deno.serve(async (req) => {
     };
     
     console.log(`Returned ${tenders?.length || 0} tenders (page ${page}/${result.pagination.totalPages})`);
-    console.log(`Filters applied: province=${province}, industry=${industry}, search="${searchQuery}"`);
+    console.log(`Filters applied: province=${province || 'All'}, industry=${industry || 'All'}, search="${searchQuery}"`);
     
     return new Response(
       JSON.stringify(result),

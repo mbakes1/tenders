@@ -18,7 +18,8 @@ import {
   Briefcase,
   Send,
   FileCheck,
-  Info
+  Info,
+  Zap
 } from 'lucide-react';
 import SkeletonDetail from './SkeletonDetail';
 import BookmarkButton from './BookmarkButton';
@@ -97,15 +98,15 @@ const TenderDetail: React.FC = () => {
           <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-6 h-6 text-red-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Tender not found</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Opportunity not found</h3>
           <p className="text-red-600 text-sm mb-4">
-            {error instanceof Error ? error.message : 'An error occurred while loading the tender'}
+            {error instanceof Error ? error.message : 'An error occurred while loading this opportunity'}
           </p>
           <Link
             to="/"
-            className="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+            className="inline-block px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium"
           >
-            Back to Tenders
+            Back to Opportunities
           </Link>
         </div>
       </div>
@@ -130,18 +131,23 @@ const TenderDetail: React.FC = () => {
           }}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Tenders
+          Back to Opportunities
         </Link>
 
         {/* Main Content Container */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
           {/* Header Section */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200 p-6 sm:p-8">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-200 p-6 sm:p-8">
             <div className="flex flex-col space-y-4">
               {/* Title and Meta */}
               <div>
+                <div className="flex items-center space-x-2 mb-3">
+                  <Zap className="w-5 h-5 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-600">Government Opportunity</span>
+                </div>
+                
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 leading-tight">
-                  {tender.title || 'Untitled Tender'}
+                  {tender.title || 'Untitled Opportunity'}
                 </h1>
                 
                 <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600 mb-4">
@@ -161,7 +167,7 @@ const TenderDetail: React.FC = () => {
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                    Open
+                    Open for Applications
                   </span>
                   
                   {tender.category && (
@@ -178,7 +184,7 @@ const TenderDetail: React.FC = () => {
                       'bg-green-100 text-green-800 border-green-200'
                     }`}>
                       <Clock className="w-4 h-4 mr-1" />
-                      {daysUntilClose > 0 ? `${daysUntilClose} days left` : 'Expired'}
+                      {daysUntilClose > 0 ? `${daysUntilClose} days left` : 'Deadline passed'}
                     </div>
                   )}
                 </div>
@@ -202,18 +208,18 @@ const TenderDetail: React.FC = () => {
               <section>
                 <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                   <Info className="w-5 h-5 mr-2 text-blue-600" />
-                  Description
+                  Opportunity Description
                 </h2>
                 <div className="prose max-w-none">
                   {tender.description && (
                     <div className="mb-4">
-                      <h3 className="font-medium text-gray-900 mb-2">General Description</h3>
+                      <h3 className="font-medium text-gray-900 mb-2">Overview</h3>
                       <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{tender.description}</p>
                     </div>
                   )}
                   {tender.bid_description && tender.bid_description !== tender.description && (
                     <div>
-                      <h3 className="font-medium text-gray-900 mb-2">Bid Description</h3>
+                      <h3 className="font-medium text-gray-900 mb-2">Detailed Requirements</h3>
                       <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{tender.bid_description}</p>
                     </div>
                   )}
@@ -230,12 +236,12 @@ const TenderDetail: React.FC = () => {
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Timeline */}
                 <div className="space-y-4">
-                  <h3 className="font-medium text-gray-900 border-b border-gray-200 pb-2">Timeline</h3>
+                  <h3 className="font-medium text-gray-900 border-b border-gray-200 pb-2">Important Dates</h3>
                   {tender.opening_date && (
                     <div className="flex items-start space-x-3">
                       <Calendar className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Opens</p>
+                        <p className="text-sm font-medium text-gray-900">Application Opens</p>
                         <p className="text-sm text-gray-600">{formatDate(tender.opening_date)}</p>
                       </div>
                     </div>
@@ -244,7 +250,7 @@ const TenderDetail: React.FC = () => {
                     <div className="flex items-start space-x-3">
                       <Clock className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Closes</p>
+                        <p className="text-sm font-medium text-gray-900">Application Deadline</p>
                         <p className="text-sm text-gray-600">{formatDate(tender.close_date)}</p>
                       </div>
                     </div>
@@ -254,7 +260,7 @@ const TenderDetail: React.FC = () => {
                       <User className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                       <div>
                         <p className="text-sm font-medium text-gray-900">
-                          Briefing Session {tender.compulsory_briefing && <span className="text-red-600">(Compulsory)</span>}
+                          Briefing Session {tender.compulsory_briefing && <span className="text-red-600">(Mandatory)</span>}
                         </p>
                         <p className="text-sm text-gray-600">{formatDate(tender.briefing_date)}</p>
                       </div>
@@ -262,9 +268,9 @@ const TenderDetail: React.FC = () => {
                   )}
                 </div>
 
-                {/* Location & Method */}
+                {/* Application Details */}
                 <div className="space-y-4">
-                  <h3 className="font-medium text-gray-900 border-b border-gray-200 pb-2">Details</h3>
+                  <h3 className="font-medium text-gray-900 border-b border-gray-200 pb-2">Application Details</h3>
                   {tender.service_location && (
                     <div className="flex items-start space-x-3">
                       <MapPin className="w-5 h-5 text-purple-500 mt-0.5 flex-shrink-0" />
@@ -309,7 +315,7 @@ const TenderDetail: React.FC = () => {
             <section>
               <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                 <Building className="w-5 h-5 mr-2 text-blue-600" />
-                Buyer Information
+                Government Department
               </h2>
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Organization */}
@@ -319,7 +325,7 @@ const TenderDetail: React.FC = () => {
                     <div className="flex items-start space-x-3">
                       <Building className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Buyer</p>
+                        <p className="text-sm font-medium text-gray-900">Procuring Entity</p>
                         <p className="text-sm text-gray-600">{tender.buyer}</p>
                       </div>
                     </div>
@@ -337,7 +343,7 @@ const TenderDetail: React.FC = () => {
 
                 {/* Contact Information */}
                 <div className="space-y-4">
-                  <h3 className="font-medium text-gray-900 border-b border-gray-200 pb-2">Contact</h3>
+                  <h3 className="font-medium text-gray-900 border-b border-gray-200 pb-2">Contact Information</h3>
                   {tender.contact_person && (
                     <div className="flex items-start space-x-3">
                       <User className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
@@ -393,7 +399,7 @@ const TenderDetail: React.FC = () => {
               <section>
                 <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                   <FileCheck className="w-5 h-5 mr-2 text-blue-600" />
-                  Items & Requirements
+                  Requirements & Scope
                 </h2>
                 <div className="space-y-4">
                   {tenderData.items.map((item: any, index: number) => (
@@ -422,7 +428,7 @@ const TenderDetail: React.FC = () => {
               <section>
                 <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
                   <FileText className="w-5 h-5 mr-2 text-blue-600" />
-                  Documents
+                  Application Documents
                 </h2>
                 <div className="space-y-3">
                   {(tender.documents || tenderData.documents).map((doc: any, index: number) => (
@@ -444,7 +450,7 @@ const TenderDetail: React.FC = () => {
                         <div className="flex items-center space-x-2 flex-shrink-0">
                           <button
                             onClick={() => downloadDocument(doc)}
-                            className="flex items-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                            className="flex items-center space-x-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium"
                           >
                             <Download className="w-4 h-4" />
                             <span>Download</span>
@@ -471,13 +477,43 @@ const TenderDetail: React.FC = () => {
               <section>
                 <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
                   <AlertCircle className="w-5 h-5 mr-2 text-amber-600" />
-                  Special Conditions
+                  Special Conditions & Requirements
                 </h2>
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
                   <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">{tender.special_conditions}</p>
                 </div>
               </section>
             )}
+
+            {/* BidBase Tips */}
+            <section className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Zap className="w-4 h-4 text-white" />
+                </div>
+                <h3 className="font-semibold text-gray-900">BidBase Success Tips</h3>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">📋 Application Checklist</h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Review all requirements carefully</li>
+                    <li>• Download and complete all forms</li>
+                    <li>• Prepare supporting documents</li>
+                    <li>• Submit before the deadline</li>
+                  </ul>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">🎯 Winning Strategies</h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Attend briefing sessions if available</li>
+                    <li>• Ask clarifying questions early</li>
+                    <li>• Highlight relevant experience</li>
+                    <li>• Follow submission guidelines exactly</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       </div>

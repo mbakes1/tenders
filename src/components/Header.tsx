@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Home, User, Menu, X } from 'lucide-react';
+import { Building2, Home, User, Menu, X, Zap } from 'lucide-react';
 import AuthModal from './AuthModal';
 import UserMenu from './UserMenu';
 import { useCurrentUser, useCacheUtils } from '../lib/queries';
@@ -35,15 +35,15 @@ const Header: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-3 group" onClick={closeMobileMenu}>
-              <div className="p-2 bg-blue-600 rounded-lg group-hover:bg-blue-700 transition-colors">
-                <Building2 className="w-5 h-5 text-white" />
+              <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg group-hover:from-blue-700 group-hover:to-purple-700 transition-all duration-200">
+                <Zap className="w-5 h-5 text-white" />
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-lg font-semibold text-gray-900">SA Tenders</h1>
-                <p className="text-xs text-gray-500">Open Contracting Portal</p>
+                <h1 className="text-lg font-bold text-gray-900">BidBase</h1>
+                <p className="text-xs text-gray-500">Government Procurement Made Simple</p>
               </div>
               <div className="sm:hidden">
-                <h1 className="text-base font-semibold text-gray-900">SA Tenders</h1>
+                <h1 className="text-base font-bold text-gray-900">BidBase</h1>
               </div>
             </Link>
             
@@ -54,7 +54,7 @@ const Header: React.FC = () => {
                 className="flex items-center space-x-2 px-3 py-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors text-sm font-medium"
               >
                 <Home className="w-4 h-4" />
-                <span>Home</span>
+                <span>Opportunities</span>
               </Link>
 
               {user ? (
@@ -62,10 +62,10 @@ const Header: React.FC = () => {
               ) : (
                 <button
                   onClick={() => setShowAuthModal(true)}
-                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm font-medium shadow-sm"
                 >
                   <User className="w-4 h-4" />
-                  <span>Sign In</span>
+                  <span>Get Started</span>
                 </button>
               )}
             </nav>
@@ -92,7 +92,7 @@ const Header: React.FC = () => {
                 className="flex items-center space-x-3 px-3 py-3 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors font-medium"
               >
                 <Home className="w-5 h-5" />
-                <span>Home</span>
+                <span>Opportunities</span>
               </Link>
 
               {user ? (
@@ -116,10 +116,10 @@ const Header: React.FC = () => {
                     setShowAuthModal(true);
                     closeMobileMenu();
                   }}
-                  className="flex items-center space-x-3 w-full px-3 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                  className="flex items-center space-x-3 w-full px-3 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium"
                 >
                   <User className="w-5 h-5" />
-                  <span>Sign In</span>
+                  <span>Get Started</span>
                 </button>
               )}
             </div>

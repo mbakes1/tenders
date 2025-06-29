@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Bookmark, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Bookmark, AlertCircle, Zap } from 'lucide-react';
 import { useBookmarks, useCurrentUser } from '../lib/queries';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
@@ -44,7 +44,7 @@ const BookmarksPage: React.FC = () => {
       <ErrorPage
         type="404"
         title="Authentication Required"
-        message="Please sign in to view your bookmarked tenders. Create an account to save and track interesting opportunities."
+        message="Please sign in to view your bookmarked opportunities. Join BidBase to save and track government tenders that match your business goals."
       />
     );
   }
@@ -69,19 +69,19 @@ const BookmarksPage: React.FC = () => {
         className="inline-flex items-center text-blue-600 hover:text-blue-700 transition-colors font-medium text-sm sm:text-base"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
-        Back to Tenders
+        Back to Opportunities
       </Link>
 
       {/* Header */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
         <div className="flex items-center space-x-3 mb-2">
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
             <Bookmark className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Bookmarks</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">My Saved Opportunities</h1>
             <p className="text-sm sm:text-base text-gray-600">
-              {bookmarks.length} {bookmarks.length === 1 ? 'tender' : 'tenders'} bookmarked
+              {bookmarks.length} {bookmarks.length === 1 ? 'opportunity' : 'opportunities'} saved for later
             </p>
           </div>
         </div>
@@ -91,25 +91,24 @@ const BookmarksPage: React.FC = () => {
       {bookmarks.length === 0 ? (
         <div className="text-center py-12 sm:py-16 px-4">
           <div className="bg-white rounded-lg border border-gray-200 p-8 sm:p-12 max-w-md mx-auto">
-            <div className="text-6xl mb-4">📌</div>
-            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              <Bookmark className="w-6 h-6 text-gray-400" />
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Zap className="w-8 h-8 text-blue-600" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Bookmarks Yet</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Saved Opportunities Yet</h3>
             <p className="text-gray-600 mb-6 text-sm sm:text-base">
-              Start bookmarking tenders you're interested in to see them here. Click the bookmark button on any tender card to save it for later.
+              Start building your opportunity pipeline! Bookmark government tenders that align with your business expertise and growth goals.
             </p>
             <Link
               to="/"
-              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="inline-block px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium"
             >
-              Browse Tenders
+              Discover Opportunities
             </Link>
             
             {/* Tip */}
             <div className="mt-6 pt-6 border-t border-gray-200">
               <p className="text-sm text-gray-500">
-                💡 <strong>Tip:</strong> Bookmarked tenders are saved to your account and sync across all your devices!
+                💡 <strong>Pro Tip:</strong> Saved opportunities sync across all your devices and help you track application deadlines!
               </p>
             </div>
           </div>

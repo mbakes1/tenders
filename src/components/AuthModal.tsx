@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Mail, Lock, User, AlertCircle, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { X, Mail, Lock, User, AlertCircle, Eye, EyeOff, CheckCircle, Zap } from 'lucide-react';
 import { signUp, signIn } from '../lib/supabase';
 
 interface AuthModalProps {
@@ -87,7 +87,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
           setIsSignUp(false);
         } else {
           // Successful sign in
-          setSuccess(isSignUp ? 'Account created successfully!' : 'Welcome back!');
+          setSuccess(isSignUp ? 'Welcome to BidBase!' : 'Welcome back to BidBase!');
           setTimeout(() => {
             onSuccess();
             onClose();
@@ -131,13 +131,18 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {isSignUp ? 'Create Account' : 'Welcome Back'}
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              {isSignUp ? 'Join SA Tenders to bookmark opportunities' : 'Sign in to access your bookmarks'}
-            </p>
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+              <Zap className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">
+                {isSignUp ? 'Join BidBase' : 'Welcome Back'}
+              </h2>
+              <p className="text-sm text-gray-600 mt-1">
+                {isSignUp ? 'Start discovering government opportunities' : 'Access your procurement dashboard'}
+              </p>
+            </div>
           </div>
           <button
             onClick={handleClose}
@@ -279,14 +284,14 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
           <button
             type="submit"
             disabled={loading || Object.keys(validationErrors).length > 0}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             ) : (
               <>
                 <User className="w-5 h-5" />
-                <span>{isSignUp ? 'Create Account' : 'Sign In'}</span>
+                <span>{isSignUp ? 'Join BidBase' : 'Sign In'}</span>
               </>
             )}
           </button>
@@ -302,7 +307,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
                 disabled={loading}
                 className="text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
               >
-                {isSignUp ? 'Sign In' : 'Sign Up'}
+                {isSignUp ? 'Sign In' : 'Join BidBase'}
               </button>
             </p>
           </div>
@@ -310,13 +315,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
           {/* Benefits */}
           <div className="mt-6 pt-6 border-t border-gray-200">
             <p className="text-xs text-gray-500 text-center mb-3">
-              ✨ <strong>Benefits of having an account:</strong>
+              ⚡ <strong>Why join BidBase?</strong>
             </p>
             <ul className="text-xs text-gray-500 space-y-1">
-              <li>📌 Bookmark interesting tenders</li>
-              <li>🔔 Get notified about new opportunities</li>
-              <li>📊 Track your tender viewing history</li>
-              <li>💾 Sync bookmarks across devices</li>
+              <li>🎯 Discover government opportunities tailored for emerging businesses</li>
+              <li>📌 Bookmark and track tenders that match your expertise</li>
+              <li>🚀 Access procurement insights and winning strategies</li>
+              <li>💼 Build your public sector business portfolio</li>
             </ul>
           </div>
         </div>

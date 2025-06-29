@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Clock, AlertCircle, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { Clock, AlertCircle, ChevronLeft, ChevronRight, Search, X, Zap } from 'lucide-react';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
 import ErrorPage from './ErrorPage';
@@ -93,13 +93,13 @@ const TenderList: React.FC = () => {
           <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-4">
             <AlertCircle className="w-6 h-6 text-red-600" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to load tenders</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Unable to load opportunities</h3>
           <p className="text-red-600 text-sm mb-6">
-            {error instanceof Error ? error.message : 'An error occurred while loading tenders'}
+            {error instanceof Error ? error.message : 'An error occurred while loading government opportunities'}
           </p>
           <button
             onClick={() => refetch()}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+            className="w-full px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium"
           >
             Try Again
           </button>
@@ -120,7 +120,7 @@ const TenderList: React.FC = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => handleSearchInputChange(e.target.value)}
-            placeholder="Search tenders..."
+            placeholder="Search government opportunities by title, department, or category..."
             className="block w-full pl-9 sm:pl-10 pr-10 py-2.5 sm:py-3 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
           />
           {searchQuery && (
@@ -142,7 +142,7 @@ const TenderList: React.FC = () => {
             {isSearching ? (
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
-                <span>Searching...</span>
+                <span>Searching opportunities...</span>
               </div>
             ) : debouncedSearchQuery ? (
               <span>
@@ -162,7 +162,7 @@ const TenderList: React.FC = () => {
             <p className="text-xs sm:text-sm text-gray-600">
               Showing <span className="text-gray-900 font-medium">{((currentPage - 1) * tendersPerPage) + 1}</span> to{' '}
               <span className="text-gray-900 font-medium">{Math.min(currentPage * tendersPerPage, data.pagination.total)}</span> of{' '}
-              <span className="text-gray-900 font-medium">{data.pagination.total.toLocaleString()}</span> {debouncedSearchQuery ? 'matching' : 'open'} tenders
+              <span className="text-gray-900 font-medium">{data.pagination.total.toLocaleString()}</span> {debouncedSearchQuery ? 'matching' : 'open'} opportunities
             </p>
             <p className="text-xs sm:text-sm text-gray-500">
               Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{data.pagination.totalPages}</span>
@@ -175,26 +175,37 @@ const TenderList: React.FC = () => {
       {!data?.tenders || data.tenders.length === 0 ? (
         <div className="text-center py-12 sm:py-16 px-4">
           <div className="bg-white rounded-lg border border-gray-200 p-8 sm:p-12 max-w-md mx-auto">
-            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-              {debouncedSearchQuery ? <Search className="w-6 h-6 text-gray-400" /> : <Clock className="w-6 h-6 text-gray-400" />}
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              {debouncedSearchQuery ? <Search className="w-8 h-8 text-blue-600" /> : <Zap className="w-8 h-8 text-blue-600" />}
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {debouncedSearchQuery ? 'No matching tenders found' : 'No open tenders found'}
+              {debouncedSearchQuery ? 'No matching opportunities found' : 'No open opportunities found'}
             </h3>
             <p className="text-gray-600 mb-4 text-sm">
               {debouncedSearchQuery 
-                ? `No tenders match your search for "${debouncedSearchQuery}". Try different keywords or clear the search.`
-                : 'No open tenders are currently available. Please check back later for new opportunities.'
+                ? `No government opportunities match your search for "${debouncedSearchQuery}". Try different keywords or explore all opportunities.`
+                : 'No open government opportunities are currently available. Check back soon for new procurement opportunities!'
               }
             </p>
             {debouncedSearchQuery && (
               <button
                 onClick={clearSearch}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium text-sm"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium text-sm"
               >
-                Clear Search
+                Explore All Opportunities
               </button>
             )}
+            
+            {/* Encouragement */}
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="flex items-center justify-center space-x-2 mb-2">
+                <Zap className="w-4 h-4 text-blue-600" />
+                <span className="text-sm font-medium text-gray-900">BidBase Tip</span>
+              </div>
+              <p className="text-sm text-gray-500">
+                New opportunities are added regularly. Bookmark interesting ones to track application deadlines!
+              </p>
+            </div>
           </div>
         </div>
       ) : (
@@ -249,7 +260,7 @@ const TenderList: React.FC = () => {
                         disabled={isFetching}
                         className={`px-2 sm:px-3 py-2 rounded-md transition-colors font-medium text-sm disabled:opacity-50 ${
                           currentPage === pageNum
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
                             : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
                         }`}
                       >

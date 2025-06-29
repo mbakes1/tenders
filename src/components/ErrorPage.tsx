@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Home, Search, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Building2, Home, Search, RefreshCw, AlertTriangle, Zap } from 'lucide-react';
 
 interface ErrorPageProps {
   type?: '404' | '500' | 'network' | 'search';
@@ -22,11 +22,11 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
       case '404':
         return {
           icon: Building2,
-          title: title || "Tender Not Found",
-          message: message || "Looks like this tender has gone missing! It might have been closed, removed, or the link might be incorrect.",
-          primaryAction: { text: "Browse Open Tenders", to: "/" },
-          secondaryAction: { text: "Search Tenders", to: "/?search=true" },
-          illustration: "🏗️",
+          title: title || "Opportunity Not Found",
+          message: message || "This government opportunity might have been closed, removed, or the link might be incorrect. Don't worry - there are plenty more opportunities waiting for you!",
+          primaryAction: { text: "Discover Opportunities", to: "/" },
+          secondaryAction: { text: "Search Opportunities", to: "/?search=true" },
+          illustration: "🎯",
           bgColor: "bg-blue-50",
           iconColor: "text-blue-600",
           borderColor: "border-blue-200"
@@ -35,7 +35,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
         return {
           icon: AlertTriangle,
           title: title || "Something Went Wrong",
-          message: message || "Our tender processing system encountered an unexpected error. Don't worry, our team has been notified and is working on a fix!",
+          message: message || "Our procurement system encountered an unexpected error. Our team has been notified and is working on a fix. Your entrepreneurial journey continues!",
           primaryAction: { text: "Try Again", onClick: onRetry },
           secondaryAction: { text: "Go Home", to: "/" },
           illustration: "⚠️",
@@ -47,7 +47,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
         return {
           icon: RefreshCw,
           title: title || "Connection Problem",
-          message: message || "Unable to connect to our tender database. Please check your internet connection and try again.",
+          message: message || "Unable to connect to BidBase servers. Please check your internet connection and try again to continue discovering opportunities.",
           primaryAction: { text: "Retry Connection", onClick: onRetry },
           secondaryAction: { text: "Go Offline", to: "/" },
           illustration: "📡",
@@ -58,10 +58,10 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
       case 'search':
         return {
           icon: Search,
-          title: title || "No Tenders Found",
-          message: message || "We couldn't find any tenders matching your search. Try different keywords or browse all available opportunities.",
+          title: title || "No Opportunities Found",
+          message: message || "We couldn't find any government opportunities matching your search. Try different keywords or explore all available opportunities to find your next big break.",
           primaryAction: { text: "Clear Search", onClick: onRetry },
-          secondaryAction: { text: "View All Tenders", to: "/" },
+          secondaryAction: { text: "View All Opportunities", to: "/" },
           illustration: "🔍",
           bgColor: "bg-gray-50",
           iconColor: "text-gray-600",
@@ -71,7 +71,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
         return {
           icon: Building2,
           title: "Oops!",
-          message: "Something unexpected happened.",
+          message: "Something unexpected happened while exploring opportunities.",
           primaryAction: { text: "Go Home", to: "/" },
           secondaryAction: null,
           illustration: "🤔",
@@ -113,7 +113,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
           {config.primaryAction.to ? (
             <Link
               to={config.primaryAction.to}
-              className={`w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors`}
+              className={`w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200`}
             >
               <Home className="w-5 h-5 mr-2" />
               {config.primaryAction.text}
@@ -121,7 +121,7 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
           ) : (
             <button
               onClick={config.primaryAction.onClick}
-              className={`w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors`}
+              className={`w-full inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-all duration-200`}
             >
               <RefreshCw className="w-5 h-5 mr-2" />
               {config.primaryAction.text}
@@ -153,8 +153,12 @@ const ErrorPage: React.FC<ErrorPageProps> = ({
 
         {/* Fun Footer */}
         <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="flex items-center justify-center space-x-2 mb-2">
+            <Zap className="w-4 h-4 text-blue-600" />
+            <span className="text-sm font-medium text-gray-900">BidBase</span>
+          </div>
           <p className="text-sm text-gray-500">
-            💡 <strong>Tip:</strong> Bookmark interesting tenders to never lose track of opportunities!
+            Making government procurement accessible for the next generation of business leaders!
           </p>
         </div>
       </div>

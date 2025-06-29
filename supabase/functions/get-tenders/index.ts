@@ -6,8 +6,9 @@ const corsHeaders = {
 interface GetTendersRequest {
   page?: number;
   limit?: number;
-  openOnly?: boolean;
   search?: string;
+  province?: string;
+  industry?: string;
 }
 
 Deno.serve(async (req) => {
@@ -28,105 +29,51 @@ Deno.serve(async (req) => {
     // Parse request body to get parameters
     const requestBody: GetTendersRequest = await req.json();
     const page = requestBody.page || 1;
-    const limit = requestBody.limit || 1000;
-    const openOnly = requestBody.openOnly !== false; // Default to true
+    const limit = requestBody.limit || 24;
     const searchQuery = requestBody.search || '';
+    const province = requestBody.province || 'All Provinces';
+    const industry = requestBody.industry || 'All Industries';
     
-    console.log('Request parameters:', { page, limit, openOnly, searchQuery });
+    console.log('Request parameters:', { page, limit, searchQuery, province, industry });
     
     // Calculate offset
     const offset = (page - 1) * limit;
     
-    // Handle search queries using the search_tenders RPC function
-    if (searchQuery.trim()) {
-      console.log(`Performing search for: "${searchQuery}"`);
-      
-      const { data: searchResults, error: searchError } = await supabase
-        .rpc('search_tenders', {
-          search_term: searchQuery.trim(),
-          limit_count: limit,
-          offset_count: offset
-        });
-      
-      if (searchError) {
-        console.error('Search function error:', searchError);
-        throw new Error(`Search failed: ${searchError.message}`);
-      }
-      
-      // Get total count for search results by running the same search without limit
-      const { data: countResults, error: countError } = await supabase
-        .rpc('search_tenders', {
-          search_term: searchQuery.trim(),
-          limit_count: 999999, // Large number to get all results for counting
-          offset_count: 0
-        });
-      
-      const totalSearchResults = countResults?.length || 0;
-      
-      // Get general statistics
-      const { data: stats } = await supabase.rpc('get_tender_stats');
-      
-      const result = {
-        success: true,
-        tenders: searchResults || [],
-        pagination: {
-          page,
-          limit,
-          total: totalSearchResults,
-          totalPages: Math.ceil(totalSearchResults / limit)
-        },
-        stats: stats?.[0] || {
-          total_tenders: 0,
-          open_tenders: 0,
-          closing_soon: 0,
-          last_updated: null
-        },
-        lastUpdated: new Date().toISOString()
-      };
-      
-      console.log(`Search returned ${searchResults?.length || 0} results for "${searchQuery}" (total: ${totalSearchResults})`);
-      
-      return new Response(
-        JSON.stringify(result),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        },
-      );
+    // Use the new comprehensive filtering function
+    const { data: results, error: filterError } = await supabase
+      .rpc('filter_tenders', {
+        p_search_term: searchQuery.trim(),
+        p_province: province === 'All Provinces' ? null : province,
+        p_industry: industry === 'All Industries' ? null : industry,
+        p_limit: limit,
+        p_offset: offset
+      });
+    
+    if (filterError) {
+      console.error('Filter function error:', filterError);
+      throw new Error(`Database query failed: ${filterError.message}`);
     }
+
+    const totalCount = results?.[0]?.total_count || 0;
+    const tenders = results?.map(t => {
+      const { total_count, ...tenderData } = t;
+      return tenderData;
+    }) || [];
+
+    // Get general statistics
+    const { data: stats } = await supabase.rpc('get_tender_stats');
     
-    // Build standard query for non-search requests
-    let query = supabase
-      .from('tenders')
-      .select('*', { count: 'exact' });
-    
-    // Filter for open tenders only if requested
-    if (openOnly) {
-      query = query.gt('close_date', new Date().toISOString());
-    }
-    
-    // Order by close date (most urgent first for open tenders)
-    query = query
-      .order('close_date', { ascending: true, nullsLast: true })
-      .range(offset, offset + limit - 1);
-    
-    const { data: tenders, error, count } = await query;
-    
-    if (error) {
-      throw new Error(`Database query failed: ${error.message}`);
-    }
-    
-    // Get statistics
-    const { data: stats } = await supabase
-      .rpc('get_tender_stats');
-    
+    // Get available filter options
+    const { data: filterOptions } = await supabase.rpc('get_filter_options');
+
     const result = {
       success: true,
-      tenders: tenders || [],
+      tenders: tenders,
       pagination: {
         page,
         limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit)
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit)
       },
       stats: stats?.[0] || {
         total_tenders: 0,
@@ -134,10 +81,15 @@ Deno.serve(async (req) => {
         closing_soon: 0,
         last_updated: null
       },
+      filters: {
+        provinces: filterOptions?.[0]?.provinces || [],
+        industries: filterOptions?.[0]?.industries || []
+      },
       lastUpdated: new Date().toISOString()
     };
     
     console.log(`Returned ${tenders?.length || 0} tenders (page ${page}/${result.pagination.totalPages})`);
+    console.log(`Filters applied: province=${province}, industry=${industry}, search="${searchQuery}"`);
     
     return new Response(
       JSON.stringify(result),
@@ -152,8 +104,9 @@ Deno.serve(async (req) => {
         success: false,
         error: error.message,
         tenders: [],
-        pagination: { page: 1, limit: 1000, total: 0, totalPages: 0 },
-        stats: { total_tenders: 0, open_tenders: 0, closing_soon: 0, last_updated: null }
+        pagination: { page: 1, limit: 24, total: 0, totalPages: 0 },
+        stats: { total_tenders: 0, open_tenders: 0, closing_soon: 0, last_updated: null },
+        filters: { provinces: [], industries: [] }
       }),
       {
         status: 500,

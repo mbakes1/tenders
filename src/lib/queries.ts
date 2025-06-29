@@ -15,8 +15,9 @@ import {
 
 // Query Keys - Centralized key management
 export const queryKeys = {
-  // Tenders
-  tenders: (page: number, search: string, limit: number) => ['tenders', { page, search, limit }] as const,
+  // Tenders with enhanced filtering
+  tenders: (page: number, search: string, province: string, industry: string, limit: number) => 
+    ['tenders', { page, search, province, industry, limit }] as const,
   tender: (ocid: string) => ['tender', ocid] as const,
   
   // Bookmarks
@@ -30,13 +31,22 @@ export const queryKeys = {
   // Admin
   adminStats: () => ['admin-stats'] as const,
   recentActivity: (limit: number) => ['recent-activity', limit] as const,
+  
+  // Filter options
+  filterOptions: () => ['filter-options'] as const,
 } as const;
 
-// Tender Queries
-export const useTenders = (page: number, search: string, limit: number = 24) => {
+// Enhanced Tender Queries with Filtering
+export const useTenders = (
+  page: number, 
+  search: string, 
+  province: string = 'All Provinces', 
+  industry: string = 'All Industries', 
+  limit: number = 24
+) => {
   return useQuery({
-    queryKey: queryKeys.tenders(page, search, limit),
-    queryFn: () => getTenders(page, search, limit),
+    queryKey: queryKeys.tenders(page, search, province, industry, limit),
+    queryFn: () => getTenders(page, search, province, industry, limit),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
     retry: 3,
@@ -52,6 +62,7 @@ export const useTender = (ocid: string, options?: Partial<UseQueryOptions<Tender
     gcTime: 30 * 60 * 1000, // 30 minutes
     enabled: !!ocid,
     retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     ...options,
   });
 };
@@ -253,6 +264,14 @@ export const useCacheUtils = () => {
     invalidateAdminData: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.adminStats() });
       queryClient.invalidateQueries({ queryKey: queryKeys.recentActivity(15) });
+    },
+    
+    // Invalidate tender data (useful after sync operations)
+    invalidateTenderData: () => {
+      queryClient.invalidateQueries({ 
+        predicate: (query) => query.queryKey[0] === 'tenders'
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.filterOptions() });
     },
     
     // Get cached data without triggering a fetch

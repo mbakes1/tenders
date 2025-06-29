@@ -1,15 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { Clock, AlertCircle, ChevronLeft, ChevronRight, Search, X, Zap } from 'lucide-react';
+import { Clock, AlertCircle, ChevronLeft, ChevronRight, Search, X, Zap, Filter, MapPin, Briefcase } from 'lucide-react';
 import TenderCard from './TenderCard';
 import SkeletonCard from './SkeletonCard';
 import ErrorPage from './ErrorPage';
 import { useTenders } from '../lib/queries';
+import { PROVINCES, INDUSTRIES } from '../lib/constants';
 
 const TenderList: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [selectedProvince, setSelectedProvince] = useState(PROVINCES[0]);
+  const [selectedIndustry, setSelectedIndustry] = useState(INDUSTRIES[0]);
+  const [showFilters, setShowFilters] = useState(false);
   const tendersPerPage = 24;
 
   // Debounce the search query
@@ -21,7 +25,7 @@ const TenderList: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Reset to page 1 when search query changes
+  // Reset to page 1 when any filter changes
   useEffect(() => {
     if (debouncedSearchQuery !== searchQuery) {
       return; // Still typing, don't reset page yet
@@ -30,9 +34,9 @@ const TenderList: React.FC = () => {
     if (currentPage !== 1) {
       setCurrentPage(1);
     }
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, selectedProvince, selectedIndustry]);
 
-  // Use TanStack Query for data fetching
+  // Use TanStack Query for data fetching with enhanced filtering
   const {
     data,
     isLoading,
@@ -40,7 +44,7 @@ const TenderList: React.FC = () => {
     error,
     isFetching,
     refetch
-  } = useTenders(currentPage, debouncedSearchQuery, tendersPerPage);
+  } = useTenders(currentPage, debouncedSearchQuery, selectedProvince, selectedIndustry, tendersPerPage);
 
   const goToPage = useCallback((page: number) => {
     setCurrentPage(page);
@@ -63,6 +67,14 @@ const TenderList: React.FC = () => {
     setSearchQuery(query);
   }, []);
 
+  const clearAllFilters = useCallback(() => {
+    setSearchQuery('');
+    setDebouncedSearchQuery('');
+    setSelectedProvince(PROVINCES[0]);
+    setSelectedIndustry(INDUSTRIES[0]);
+    setCurrentPage(1);
+  }, []);
+
   const clearSearch = useCallback(() => {
     setSearchQuery('');
     setDebouncedSearchQuery('');
@@ -70,25 +82,36 @@ const TenderList: React.FC = () => {
   }, []);
 
   const isSearching = searchQuery !== debouncedSearchQuery;
+  const hasActiveFilters = selectedProvince !== PROVINCES[0] || selectedIndustry !== INDUSTRIES[0] || debouncedSearchQuery;
 
   // Generate dynamic meta data for SEO
   const generateMetaData = () => {
     const totalTenders = data?.pagination.total || 0;
     const openTenders = data?.stats?.open_tenders || 0;
     
+    let title = `Government Opportunities - ${openTenders.toLocaleString()} Open Tenders | BidBase`;
+    let description = `Discover ${openTenders.toLocaleString()} open government procurement opportunities. Find tenders perfect for emerging businesses and entrepreneurs in South Africa.`;
+    let keywords = 'government tenders, public procurement, business opportunities, entrepreneurs, consultants, south africa, bidbase';
+    
     if (debouncedSearchQuery) {
-      return {
-        title: `${debouncedSearchQuery} - Government Opportunities | BidBase`,
-        description: `Find ${totalTenders.toLocaleString()} government opportunities matching "${debouncedSearchQuery}". Discover procurement tenders for emerging businesses on BidBase.`,
-        keywords: `${debouncedSearchQuery}, government tender, public procurement, business opportunity, south africa, bidbase`
-      };
+      title = `${debouncedSearchQuery} - Government Opportunities | BidBase`;
+      description = `Find ${totalTenders.toLocaleString()} government opportunities matching "${debouncedSearchQuery}". Discover procurement tenders for emerging businesses on BidBase.`;
+      keywords = `${debouncedSearchQuery}, government tender, public procurement, business opportunity, south africa, bidbase`;
     }
     
-    return {
-      title: `Government Opportunities - ${openTenders.toLocaleString()} Open Tenders | BidBase`,
-      description: `Discover ${openTenders.toLocaleString()} open government procurement opportunities. Find tenders perfect for emerging businesses and entrepreneurs in South Africa.`,
-      keywords: 'government tenders, public procurement, business opportunities, entrepreneurs, consultants, south africa, bidbase'
-    };
+    if (selectedProvince !== PROVINCES[0]) {
+      title = `${selectedProvince} Government Opportunities | BidBase`;
+      description = `Discover government procurement opportunities in ${selectedProvince}. Find ${totalTenders.toLocaleString()} tenders for emerging businesses.`;
+      keywords = `${selectedProvince.toLowerCase()}, government tenders, public procurement, ${keywords}`;
+    }
+    
+    if (selectedIndustry !== INDUSTRIES[0]) {
+      title = `${selectedIndustry} Government Opportunities | BidBase`;
+      description = `Find ${selectedIndustry.toLowerCase()} government tenders and procurement opportunities. ${totalTenders.toLocaleString()} opportunities available.`;
+      keywords = `${selectedIndustry.toLowerCase()}, ${keywords}`;
+    }
+    
+    return { title, description, keywords };
   };
 
   const metaData = generateMetaData();
@@ -163,7 +186,7 @@ const TenderList: React.FC = () => {
         
         {/* Additional SEO */}
         <meta name="robots" content="index, follow" />
-        <link rel="canonical" href={debouncedSearchQuery ? `https://bidbase.co.za/?search=${encodeURIComponent(debouncedSearchQuery)}` : "https://bidbase.co.za/"} />
+        <link rel="canonical" href={hasActiveFilters ? `https://bidbase.co.za/?filters=active` : "https://bidbase.co.za/"} />
         
         {/* Structured Data for Website */}
         <script type="application/ld+json">
@@ -183,8 +206,9 @@ const TenderList: React.FC = () => {
       </Helmet>
 
       <div className="space-y-4 sm:space-y-6">
-        {/* Search Box */}
-        <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
+        {/* Search and Filter Section */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
+          {/* Search Box */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" />
@@ -210,8 +234,74 @@ const TenderList: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Filter Toggle */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center space-x-2 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm"
+            >
+              <Filter className="w-4 h-4" />
+              <span>Filters</span>
+              {hasActiveFilters && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  Active
+                </span>
+              )}
+            </button>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Clear all filters
+              </button>
+            )}
+          </div>
+
+          {/* Filter Dropdowns */}
+          {showFilters && (
+            <div className="grid gap-4 sm:grid-cols-2 pt-4 border-t border-gray-200">
+              <div>
+                <label htmlFor="province-filter" className="block text-sm font-medium text-gray-700 mb-2">
+                  <MapPin className="w-4 h-4 inline mr-1" />
+                  Province
+                </label>
+                <select
+                  id="province-filter"
+                  value={selectedProvince}
+                  onChange={(e) => setSelectedProvince(e.target.value)}
+                  className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  {PROVINCES.map(province => (
+                    <option key={province} value={province}>{province}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label htmlFor="industry-filter" className="block text-sm font-medium text-gray-700 mb-2">
+                  <Briefcase className="w-4 h-4 inline mr-1" />
+                  Industry
+                </label>
+                <select
+                  id="industry-filter"
+                  value={selectedIndustry}
+                  onChange={(e) => setSelectedIndustry(e.target.value)}
+                  className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                >
+                  {INDUSTRIES.map(industry => (
+                    <option key={industry} value={industry}>{industry}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Search Status */}
           {searchQuery && (
-            <div className="mt-2 text-xs sm:text-sm text-gray-600">
+            <div className="text-xs sm:text-sm text-gray-600">
               {isSearching ? (
                 <div className="flex items-center space-x-2">
                   <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
@@ -220,6 +310,12 @@ const TenderList: React.FC = () => {
               ) : debouncedSearchQuery ? (
                 <span>
                   Results for: <span className="font-medium text-gray-900">"{debouncedSearchQuery}"</span>
+                  {selectedProvince !== PROVINCES[0] && (
+                    <span> in <span className="font-medium text-gray-900">{selectedProvince}</span></span>
+                  )}
+                  {selectedIndustry !== INDUSTRIES[0] && (
+                    <span> • <span className="font-medium text-gray-900">{selectedIndustry}</span></span>
+                  )}
                 </span>
               ) : (
                 <span className="text-gray-500">Type to search...</span>
@@ -228,14 +324,15 @@ const TenderList: React.FC = () => {
           )}
         </div>
 
-        {/* Pagination Info */}
+        {/* Results Summary */}
         {data && data.tenders.length > 0 && (
           <div className="bg-white rounded-lg border border-gray-200 p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
               <p className="text-xs sm:text-sm text-gray-600">
                 Showing <span className="text-gray-900 font-medium">{((currentPage - 1) * tendersPerPage) + 1}</span> to{' '}
                 <span className="text-gray-900 font-medium">{Math.min(currentPage * tendersPerPage, data.pagination.total)}</span> of{' '}
-                <span className="text-gray-900 font-medium">{data.pagination.total.toLocaleString()}</span> {debouncedSearchQuery ? 'matching' : 'open'} opportunities
+                <span className="text-gray-900 font-medium">{data.pagination.total.toLocaleString()}</span> opportunities
+                {hasActiveFilters && <span className="text-blue-600"> (filtered)</span>}
               </p>
               <p className="text-xs sm:text-sm text-gray-500">
                 Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{data.pagination.totalPages}</span>
@@ -249,23 +346,23 @@ const TenderList: React.FC = () => {
           <div className="text-center py-12 sm:py-16 px-4">
             <div className="bg-white rounded-lg border border-gray-200 p-8 sm:p-12 max-w-md mx-auto">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                {debouncedSearchQuery ? <Search className="w-8 h-8 text-blue-600" /> : <Zap className="w-8 h-8 text-blue-600" />}
+                {hasActiveFilters ? <Search className="w-8 h-8 text-blue-600" /> : <Zap className="w-8 h-8 text-blue-600" />}
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {debouncedSearchQuery ? 'No matching opportunities found' : 'No open opportunities found'}
+                {hasActiveFilters ? 'No matching opportunities found' : 'No open opportunities found'}
               </h3>
               <p className="text-gray-600 mb-4 text-sm">
-                {debouncedSearchQuery 
-                  ? `No government opportunities match your search for "${debouncedSearchQuery}". Try different keywords or explore all opportunities.`
+                {hasActiveFilters 
+                  ? `No government opportunities match your current filters. Try adjusting your search criteria or explore all opportunities.`
                   : 'No open government opportunities are currently available. Check back soon for new procurement opportunities!'
                 }
               </p>
-              {debouncedSearchQuery && (
+              {hasActiveFilters && (
                 <button
-                  onClick={clearSearch}
+                  onClick={clearAllFilters}
                   className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium text-sm"
                 >
-                  Explore All Opportunities
+                  Clear Filters & Explore All
                 </button>
               )}
               
@@ -276,7 +373,7 @@ const TenderList: React.FC = () => {
                   <span className="text-sm font-medium text-gray-900">BidBase Tip</span>
                 </div>
                 <p className="text-sm text-gray-500">
-                  New opportunities are added regularly. Bookmark interesting ones to track application deadlines!
+                  New opportunities are added regularly. Use filters to find opportunities that match your business expertise!
                 </p>
               </div>
             </div>

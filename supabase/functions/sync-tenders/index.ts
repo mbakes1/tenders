@@ -38,6 +38,105 @@ interface TenderRelease {
   contracts?: any[];
 }
 
+// Province mapping for data enrichment
+const PROVINCE_KEYWORDS = {
+  'Eastern Cape': ['eastern cape', 'ec', 'port elizabeth', 'east london', 'grahamstown', 'mthatha'],
+  'Free State': ['free state', 'fs', 'bloemfontein', 'welkom', 'kroonstad'],
+  'Gauteng': ['gauteng', 'gp', 'johannesburg', 'pretoria', 'soweto', 'sandton', 'midrand', 'centurion'],
+  'KwaZulu-Natal': ['kwazulu-natal', 'kzn', 'durban', 'pietermaritzburg', 'newcastle', 'richards bay'],
+  'Limpopo': ['limpopo', 'lp', 'polokwane', 'tzaneen', 'thohoyandou'],
+  'Mpumalanga': ['mpumalanga', 'mp', 'nelspruit', 'witbank', 'secunda', 'emalahleni'],
+  'Northern Cape': ['northern cape', 'nc', 'kimberley', 'upington', 'springbok'],
+  'North West': ['north west', 'nw', 'mafikeng', 'potchefstroom', 'klerksdorp', 'rustenburg'],
+  'Western Cape': ['western cape', 'wc', 'cape town', 'stellenbosch', 'paarl', 'george', 'worcester']
+};
+
+// Industry keywords for categorization
+const INDUSTRY_KEYWORDS = {
+  'Information Technology': [
+    'it', 'software', 'hardware', 'ict', 'information technology', 'website', 'development',
+    'computer', 'system', 'network', 'database', 'programming', 'digital', 'cyber', 'cloud'
+  ],
+  'Construction & Infrastructure': [
+    'construction', 'building', 'civil', 'roads', 'infrastructure', 'maintenance',
+    'renovation', 'repair', 'plumbing', 'electrical', 'roofing', 'painting'
+  ],
+  'Consulting Services': [
+    'consulting', 'advisory', 'professional services', 'facilitation', 'strategy',
+    'management consulting', 'business consulting', 'technical consulting'
+  ],
+  'Marketing & Communications': [
+    'marketing', 'advertising', 'communication', 'media', 'brand', 'public relations',
+    'social media', 'graphic design', 'printing', 'promotional'
+  ],
+  'Health & Medical': [
+    'health', 'medical', 'hospital', 'pharmaceutical', 'ppe', 'healthcare',
+    'clinic', 'nursing', 'medical equipment', 'laboratory'
+  ],
+  'Security Services': [
+    'security', 'guarding', 'cctv', 'alarm', 'surveillance', 'access control',
+    'security systems', 'patrol', 'monitoring'
+  ],
+  'Education & Training': [
+    'education', 'training', 'learning', 'school', 'university', 'college',
+    'workshop', 'course', 'curriculum', 'teaching'
+  ],
+  'Financial Services': [
+    'financial', 'banking', 'insurance', 'accounting', 'audit', 'tax',
+    'bookkeeping', 'payroll', 'financial management'
+  ],
+  'Transportation & Logistics': [
+    'transport', 'logistics', 'delivery', 'freight', 'shipping', 'courier',
+    'vehicle', 'fleet', 'distribution'
+  ],
+  'Energy & Utilities': [
+    'energy', 'electricity', 'power', 'solar', 'renewable', 'utilities',
+    'water', 'gas', 'fuel', 'generator'
+  ],
+  'Legal Services': [
+    'legal', 'law', 'attorney', 'lawyer', 'litigation', 'compliance',
+    'regulatory', 'legal advice'
+  ]
+};
+
+function getProvinceFromLocation(tender: TenderRelease): string | null {
+  // Check multiple location sources
+  const locationSources = [
+    tender.buyer?.address?.locality,
+    tender.buyer?.address?.region,
+    tender.buyer?.address?.streetAddress,
+    tender.buyer?.name,
+    tender.tender?.title,
+    tender.tender?.description
+  ].filter(Boolean);
+
+  const searchText = locationSources.join(' ').toLowerCase();
+  
+  for (const [province, keywords] of Object.entries(PROVINCE_KEYWORDS)) {
+    for (const keyword of keywords) {
+      if (searchText.includes(keyword)) {
+        return province;
+      }
+    }
+  }
+  
+  return null;
+}
+
+function mapToIndustry(tender: TenderRelease): string {
+  const searchText = `${tender.tender?.title || ''} ${tender.tender?.description || ''} ${tender.tender?.mainProcurementCategory || ''}`.toLowerCase();
+  
+  for (const [industry, keywords] of Object.entries(INDUSTRY_KEYWORDS)) {
+    for (const keyword of keywords) {
+      if (searchText.includes(keyword)) {
+        return industry;
+      }
+    }
+  }
+  
+  return 'Other';
+}
+
 const isOpenTender = (release: TenderRelease): boolean => {
   if (!release.tender?.tenderPeriod?.endDate) return false;
   
@@ -72,6 +171,10 @@ const fetchTendersFromAPI = async (dateFrom: string, dateTo: string, pageNumber 
 
 const upsertTenderToDatabase = async (supabaseClient: any, tender: TenderRelease) => {
   try {
+    // Enhanced data enrichment
+    const province = getProvinceFromLocation(tender);
+    const industry = mapToIndustry(tender);
+
     const tenderData = {
       ocid: tender.ocid,
       title: tender.tender?.title || null,
@@ -82,7 +185,11 @@ const upsertTenderToDatabase = async (supabaseClient: any, tender: TenderRelease
       buyer: tender.buyer?.name || null,
       full_data: tender,
       
-      // Additional fields from the enhanced schema
+      // Enhanced fields with enriched data
+      province: province,
+      industry_category: industry,
+      
+      // Existing fields
       bid_number: tender.tender?.id || null,
       department: tender.buyer?.name || null,
       bid_description: tender.tender?.description || null,
@@ -93,6 +200,7 @@ const upsertTenderToDatabase = async (supabaseClient: any, tender: TenderRelease
       submission_method: tender.tender?.procurementMethod || null,
       documents: tender.tender?.documents || null,
       reference_number: tender.tender?.id || null,
+      service_location: tender.buyer?.address?.locality || tender.buyer?.address?.region || null,
       
       updated_at: new Date().toISOString()
     };

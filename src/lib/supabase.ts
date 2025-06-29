@@ -174,13 +174,21 @@ export const getRecentActivity = async (limit = 10) => {
   }
 };
 
-// Tender data functions - Updated to use Edge Function
-export const getTenders = async (page: number, search: string, limit: number) => {
+// Enhanced Tender data functions with filtering support
+export const getTenders = async (
+  page: number, 
+  search: string, 
+  province: string = 'All Provinces', 
+  industry: string = 'All Industries', 
+  limit: number = 24
+) => {
   try {
     const { data, error } = await supabase.functions.invoke('get-tenders', {
       body: {
         page,
         search: search.trim(),
+        province: province === 'All Provinces' ? null : province,
+        industry: industry === 'All Industries' ? null : industry,
         limit
       }
     });

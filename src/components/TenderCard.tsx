@@ -4,6 +4,7 @@ import { Calendar, Building, ExternalLink, Clock, AlertTriangle } from 'lucide-r
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
 import { useCacheUtils } from '../lib/queries';
+import { useTenderTracking } from '../hooks/useAnalytics';
 import { type Tender } from '../lib/supabase';
 
 interface TenderCardProps {
@@ -13,6 +14,7 @@ interface TenderCardProps {
 const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { prefetchTender } = useCacheUtils();
+  const { trackTenderView } = useTenderTracking();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-ZA', {
@@ -59,6 +61,11 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
     }
   };
 
+  const handleCardClick = () => {
+    // Track tender view when card is clicked
+    trackTenderView(tender, 'browse');
+  };
+
   return (
     <>
       <div 
@@ -68,7 +75,11 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1 min-w-0 pr-3">
-            <Link to={`/tender/${encodeURIComponent(tender.ocid)}`} className="group">
+            <Link 
+              to={`/tender/${encodeURIComponent(tender.ocid)}`} 
+              className="group"
+              onClick={handleCardClick}
+            >
               {/* Procuring Entity as main title */}
               <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2 text-sm sm:text-base leading-snug mb-2">
                 {tender.buyer || tender.department || 'Government Entity'}
@@ -89,7 +100,10 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
             </div>
           </div>
           <div className="flex-shrink-0">
-            <Link to={`/tender/${encodeURIComponent(tender.ocid)}`}>
+            <Link 
+              to={`/tender/${encodeURIComponent(tender.ocid)}`}
+              onClick={handleCardClick}
+            >
               <div className="w-6 h-6 bg-gray-100 rounded flex items-center justify-center group-hover:bg-blue-100 transition-colors">
                 <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
               </div>

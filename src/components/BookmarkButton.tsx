@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Bookmark, BookmarkCheck, AlertCircle } from 'lucide-react';
 import { useIsBookmarked, useAddBookmark, useRemoveBookmark } from '../lib/queries';
 import { useCurrentUser } from '../lib/queries';
+import { useTenderTracking } from '../hooks/useAnalytics';
 
 interface BookmarkButtonProps {
   tenderOcid: string;
@@ -15,6 +16,7 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({
   className = "" 
 }) => {
   const [error, setError] = useState<string | null>(null);
+  const { trackTenderBookmark } = useTenderTracking();
 
   // Use TanStack Query for state management
   const { data: currentUser } = useCurrentUser();
@@ -53,8 +55,12 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({
     try {
       if (isBookmarked) {
         await removeBookmarkMutation.mutateAsync(tenderOcid);
+        // Track unbookmark event
+        trackTenderBookmark({ ocid: tenderOcid }, user.id, 'remove');
       } else {
         await addBookmarkMutation.mutateAsync(tenderOcid);
+        // Track bookmark event
+        trackTenderBookmark({ ocid: tenderOcid }, user.id, 'add');
       }
     } catch (err) {
       console.error('Bookmark operation failed:', err);

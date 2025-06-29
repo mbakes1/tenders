@@ -26,12 +26,15 @@ import SkeletonDetail from './SkeletonDetail';
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
 import { useTender, useCacheUtils } from '../lib/queries';
+import { useTenderTracking, useDocumentTracking } from '../hooks/useAnalytics';
 import { downloadDocumentProxy, type Tender } from '../lib/supabase';
 
 const TenderDetail: React.FC = () => {
   const { ocid } = useParams<{ ocid: string }>();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { prefetchTender } = useCacheUtils();
+  const { trackTenderView } = useTenderTracking();
+  const { trackDocumentDownload, trackDocumentView } = useDocumentTracking();
 
   const decodedOcid = ocid ? decodeURIComponent(ocid) : '';
 
@@ -42,6 +45,13 @@ const TenderDetail: React.FC = () => {
     isError,
     error
   } = useTender(decodedOcid);
+
+  // Track tender view when data loads
+  React.useEffect(() => {
+    if (tender) {
+      trackTenderView(tender, 'direct');
+    }
+  }, [tender, trackTenderView]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-ZA', {
@@ -63,6 +73,11 @@ const TenderDetail: React.FC = () => {
 
   const downloadDocument = async (doc: any) => {
     try {
+      // Track document download
+      if (tender) {
+        trackDocumentDownload(tender, doc);
+      }
+      
       const blob = await downloadDocumentProxy(doc);
       
       const url = window.URL.createObjectURL(blob);
@@ -76,6 +91,10 @@ const TenderDetail: React.FC = () => {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Download error:', error);
+      // Track document view as fallback
+      if (tender) {
+        trackDocumentView(tender, doc);
+      }
       window.open(doc.url, '_blank');
     }
   };
@@ -605,6 +624,7 @@ const TenderDetail: React.FC = () => {
                             href={doc.url}
                             target="_blank"
                             rel="noopener noreferrer"
+                            onClick={() => trackDocumentView(tender, doc)}
                             className="flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50 transition-colors text-sm"
                           >
                             <ExternalLink className="w-4 h-4" />

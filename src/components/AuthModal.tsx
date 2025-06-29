@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, Lock, User, AlertCircle, Eye, EyeOff, CheckCircle, Zap } from 'lucide-react';
 import { signUp, signIn } from '../lib/supabase';
+import { trackEvent } from '../lib/analytics';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -78,6 +79,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
 
       if (error) {
         setError(error.message);
+        
+        // Track authentication error
+        trackEvent('error_occurred', {
+          error_type: 'auth',
+          error_message: error.message,
+          error_context: isSignUp ? 'signup' : 'signin',
+        });
       } else if (data.user) {
         if (isSignUp && !data.session) {
           // Email confirmation required
@@ -85,9 +93,22 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
           setEmail('');
           setPassword('');
           setIsSignUp(false);
+          
+          // Track successful signup
+          trackEvent('user_signed_up', {
+            method: 'email',
+            user_id: data.user.id,
+          });
         } else {
           // Successful sign in
           setSuccess(isSignUp ? 'Welcome to BidBase!' : 'Welcome back to BidBase!');
+          
+          // Track successful signin
+          trackEvent('user_signed_in', {
+            method: 'email',
+            user_id: data.user.id,
+          });
+          
           setTimeout(() => {
             onSuccess();
             onClose();
@@ -96,7 +117,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
         }
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
+      const errorMessage = 'An unexpected error occurred. Please try again.';
+      setError(errorMessage);
+      
+      // Track unexpected error
+      trackEvent('error_occurred', {
+        error_type: 'auth',
+        error_message: errorMessage,
+        error_context: isSignUp ? 'signup_exception' : 'signin_exception',
+      });
     } finally {
       setLoading(false);
     }

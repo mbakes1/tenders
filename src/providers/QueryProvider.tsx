@@ -20,12 +20,37 @@ const queryClient = new QueryClient({
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
       refetchOnWindowFocus: false, // Disable refetch on window focus for better UX
       refetchOnReconnect: true, // Refetch when connection is restored
+      // Add error boundary integration
+      throwOnError: (error: any) => {
+        // Let the error boundary handle 5xx server errors and network errors
+        return error?.status >= 500 || !error?.status;
+      },
     },
     mutations: {
       // Global defaults for all mutations
       retry: 1,
       retryDelay: 1000,
+      // Add error boundary integration for mutations
+      throwOnError: (error: any) => {
+        // Let the error boundary handle critical mutation errors
+        return error?.status >= 500 || !error?.status;
+      },
     },
+  },
+});
+
+// Add global error handler for React Query
+queryClient.setMutationDefaults(['global'], {
+  onError: (error) => {
+    console.error('🚨 React Query mutation error:', error);
+    // Additional error logging/reporting could go here
+  },
+});
+
+queryClient.setQueryDefaults(['global'], {
+  onError: (error) => {
+    console.error('🚨 React Query query error:', error);
+    // Additional error logging/reporting could go here
   },
 });
 

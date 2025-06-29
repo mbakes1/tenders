@@ -206,35 +206,15 @@ export const addBookmark = async (tenderOcid: string) => {
       throw new Error('Invalid tender reference');
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    // Safely get the current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
       throw new Error('You must be signed in to bookmark tenders');
     }
+    const user = userData.user;
 
-    // Check if tender exists first
-    const { data: tenderExists } = await supabase
-      .from('tenders')
-      .select('ocid')
-      .eq('ocid', tenderOcid.trim())
-      .single();
-
-    if (!tenderExists) {
-      throw new Error('Tender not found');
-    }
-
-    // Check if already bookmarked
-    const { data: existingBookmark } = await supabase
-      .from('bookmarks')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('tender_ocid', tenderOcid.trim())
-      .single();
-
-    if (existingBookmark) {
-      return { data: existingBookmark, error: null }; // Already bookmarked, return success
-    }
-
-    // Add bookmark
+    // Attempt to insert the bookmark directly.
+    // The UNIQUE constraint on the table will handle duplicates gracefully.
     const { data, error } = await supabase
       .from('bookmarks')
       .insert({ 
@@ -245,9 +225,13 @@ export const addBookmark = async (tenderOcid: string) => {
       .single();
 
     if (error) {
-      if (error.code === '23505') { // Unique constraint violation
-        return { data: null, error: null }; // Already bookmarked, treat as success
+      // If it's a unique constraint violation (code 23505), it's not an error for us.
+      // It just means the bookmark already exists, so we can proceed without issue.
+      if (error.code === '23505') {
+        console.warn('Bookmark already exists, which is fine.');
+        return { data: null, error: null };
       }
+      // For any other database error, we should throw it.
       throw new Error(error.message);
     }
 
@@ -267,10 +251,12 @@ export const removeBookmark = async (tenderOcid: string) => {
       throw new Error('Invalid tender reference');
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    // Safely get the current user
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
       throw new Error('You must be signed in to manage bookmarks');
     }
+    const user = userData.user;
 
     const { error } = await supabase
       .from('bookmarks')
@@ -315,8 +301,8 @@ export const checkIfBookmarked = async (tenderOcid: string) => {
 
 export const getUserBookmarks = async (page = 1, limit = 24): Promise<{ data: Tender[], error: any }> => {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user) {
       throw new Error('You must be signed in to view bookmarks');
     }
 

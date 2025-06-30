@@ -106,11 +106,11 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({
       <button
         onClick={handleBookmarkToggle}
         disabled={isLoading}
-        className={`flex items-center space-x-1 px-3 py-1.5 rounded-md transition-colors font-medium text-sm disabled:opacity-50 ${
+        className={`flex items-center space-x-1 px-2 py-1 rounded-md transition-colors font-medium text-xs disabled:opacity-50 ${
           isBookmarked
             ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-        } ${className}`}
+        } ${className}`} /* Smaller padding and text */
         title={
           !user 
             ? 'Sign in to bookmark' 
@@ -129,13 +129,13 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({
         }
       >
         {isLoading ? (
-          <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin"></div> /* Smaller spinner */
         ) : error ? (
-          <AlertCircle className="w-4 h-4" />
+          <AlertCircle className="w-3 h-3" /> /* Smaller icon */
         ) : isBookmarked ? (
-          <BookmarkCheck className="w-4 h-4" />
+          <BookmarkCheck className="w-3 h-3" /> /* Smaller icon */
         ) : (
-          <Bookmark className="w-4 h-4" />
+          <Bookmark className="w-3 h-3" /> /* Smaller icon */
         )}
         <span>
           {isLoading 
@@ -151,15 +151,15 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({
 
       {/* Error tooltip */}
       {error && (
-        <div className="absolute top-full left-0 mt-1 z-10 bg-red-50 border border-red-200 rounded-md p-2 shadow-lg min-w-max">
-          <div className="flex items-start space-x-2">
-            <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+        <div className="absolute top-full left-0 mt-1 z-10 bg-red-50 border border-red-200 rounded-md p-2 shadow-lg min-w-max"> {/* Reduced padding */}
+          <div className="flex items-start space-x-1.5"> {/* Reduced spacing */}
+            <AlertCircle className="w-3 h-3 text-red-600 flex-shrink-0 mt-0.5" /> {/* Smaller icon */}
             <div>
-              <p className="text-xs text-red-800 font-medium">Bookmark Error</p>
-              <p className="text-xs text-red-700">{error}</p>
+              <p className="text-xs text-red-800 font-medium">Bookmark Error</p> {/* Smaller text */}
+              <p className="text-xs text-red-700">{error}</p> {/* Smaller text */}
               <button
                 onClick={() => setError(null)}
-                className="text-xs text-red-600 hover:text-red-700 underline mt-1"
+                className="text-xs text-red-600 hover:text-red-700 underline mt-0.5" /* Smaller text and margin */
               >
                 Dismiss
               </button>

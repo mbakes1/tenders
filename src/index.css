@@ -17,7 +17,7 @@
   /* Improve touch targets on mobile */
   @media (max-width: 768px) {
     button, a, input, select, textarea {
-      min-height: 44px;
+      min-height: 36px; /* Reduced from 44px */
     }
   }
 }
@@ -38,11 +38,11 @@
   }
   
   .animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.2s ease-out; /* Faster animation */
   }
   
   .animate-slide-up {
-    animation: slideUp 0.2s ease-out;
+    animation: slideUp 0.15s ease-out; /* Faster animation */
   }
 
   /* Toast progress bar animation */
@@ -57,7 +57,7 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
+    width: 4px; /* Thinner scrollbar */
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
@@ -66,13 +66,13 @@
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: #cbd5e0;
-    border-radius: 3px;
+    border-radius: 2px;
   }
 
   /* Improve focus visibility for accessibility */
   .focus-visible {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
+    outline: 1px solid #3b82f6; /* Thinner outline */
+    outline-offset: 1px;
   }
 
   /* Safe area insets for mobile devices with notches */
@@ -83,6 +83,11 @@
   .safe-area-bottom {
     padding-bottom: env(safe-area-inset-bottom);
   }
+
+  /* Compact spacing utilities */
+  .space-y-2\.5 > * + * { margin-top: 0.625rem; }
+  .space-y-1\.5 > * + * { margin-top: 0.375rem; }
+  .space-x-1\.5 > * + * { margin-left: 0.375rem; }
 }
 
 @keyframes fadeIn {
@@ -91,7 +96,7 @@
 }
 
 @keyframes slideUp {
-  from { transform: translateY(8px); opacity: 0; }
+  from { transform: translateY(4px); opacity: 0; } /* Reduced movement */
   to { transform: translateY(0); opacity: 1; }
 }
 
@@ -111,12 +116,13 @@
   }
 
   /* Improve text readability on small screens */
-  .text-xs { font-size: 0.75rem; }
-  .text-sm { font-size: 0.875rem; }
+  .text-xs { font-size: 0.7rem; } /* Smaller */
+  .text-sm { font-size: 0.8rem; } /* Smaller */
   
   /* Better spacing for mobile */
-  .space-y-4 > * + * { margin-top: 1rem; }
-  .space-y-6 > * + * { margin-top: 1.5rem; }
+  .space-y-3 > * + * { margin-top: 0.75rem; }
+  .space-y-4 > * + * { margin-top: 0.875rem; } /* Reduced */
+  .space-y-6 > * + * { margin-top: 1.25rem; } /* Reduced */
 }
 
 /* High contrast mode support */

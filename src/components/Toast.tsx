@@ -40,7 +40,7 @@ const Toast: React.FC<ToastProps> = ({
     setIsExiting(true);
     setTimeout(() => {
       onDismiss(id);
-    }, 300); // Match exit animation duration
+    }, 200); // Faster exit animation
   };
 
   const getToastConfig = () => {
@@ -91,27 +91,27 @@ const Toast: React.FC<ToastProps> = ({
   return (
     <div
       className={`
-        relative max-w-sm w-full ${config.bgColor} ${config.borderColor} border rounded-lg shadow-lg p-4
-        transform transition-all duration-300 ease-in-out
+        relative max-w-xs w-full ${config.bgColor} ${config.borderColor} border rounded-lg shadow-lg p-3
+        transform transition-all duration-200 ease-in-out
         ${isVisible && !isExiting 
           ? 'translate-x-0 opacity-100 scale-100' 
           : 'translate-x-full opacity-0 scale-95'
         }
-      `}
+      `} /* Smaller max width, padding, and faster animation */
       role="alert"
       aria-live="polite"
     >
-      <div className="flex items-start space-x-3">
-        <div className={`flex-shrink-0 w-5 h-5 ${config.iconColor} mt-0.5`}>
-          <IconComponent className="w-5 h-5" />
+      <div className="flex items-start space-x-2"> {/* Reduced spacing */}
+        <div className={`flex-shrink-0 w-4 h-4 ${config.iconColor} mt-0.5`}> {/* Smaller icon */}
+          <IconComponent className="w-4 h-4" />
         </div>
         
         <div className="flex-1 min-w-0">
-          <h4 className={`text-sm font-semibold ${config.titleColor} leading-tight`}>
+          <h4 className={`text-xs font-semibold ${config.titleColor} leading-tight`}> {/* Smaller text */}
             {title}
           </h4>
           {message && (
-            <p className={`text-sm ${config.messageColor} mt-1 leading-relaxed`}>
+            <p className={`text-xs ${config.messageColor} mt-0.5 leading-relaxed`}> {/* Smaller text and margin */}
               {message}
             </p>
           )}
@@ -119,16 +119,16 @@ const Toast: React.FC<ToastProps> = ({
         
         <button
           onClick={handleDismiss}
-          className={`flex-shrink-0 p-1 rounded-md hover:bg-black hover:bg-opacity-10 transition-colors ${config.iconColor}`}
+          className={`flex-shrink-0 p-0.5 rounded-md hover:bg-black hover:bg-opacity-10 transition-colors ${config.iconColor}`} /* Smaller padding */
           aria-label="Dismiss notification"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3 h-3" /> {/* Smaller icon */}
         </button>
       </div>
       
       {/* Progress bar for timed dismissal */}
       {duration > 0 && (
-        <div className={`absolute bottom-0 left-0 h-1 ${config.borderColor} bg-opacity-30 rounded-b-lg overflow-hidden`}>
+        <div className={`absolute bottom-0 left-0 h-0.5 ${config.borderColor} bg-opacity-30 rounded-b-lg overflow-hidden`}> {/* Thinner progress bar */}
           <div 
             className={`h-full ${config.iconColor.replace('text-', 'bg-')} bg-opacity-60 animate-shrink-width`}
             style={{ 

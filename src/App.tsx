@@ -34,11 +34,11 @@ function App() {
       }}
     >
       <QueryProvider>
-        <ToastProvider maxToasts={5} defaultDuration={5000}>
+        <ToastProvider maxToasts={3} defaultDuration={4000> {/* Reduced max toasts and duration */}
           <Router>
             <div className="min-h-screen bg-gray-50">
               <Header />
-              <main className="container mx-auto px-4 py-4 sm:py-6 max-w-7xl">
+              <main className="container mx-auto px-3 py-3 max-w-7xl"> {/* Reduced padding */}
                 <Routes>
                   <Route path="/" element={<TenderList />} />
                   <Route path="/tender/:ocid" element={<TenderDetail />} />
@@ -50,8 +50,8 @@ function App() {
                       index 
                       element={
                         <Suspense fallback={
-                          <div className="flex items-center justify-center py-12">
-                            <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                          <div className="flex items-center justify-center py-8"> {/* Reduced padding */}
+                            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div> {/* Smaller spinner */}
                           </div>
                         }>
                           <AdminDashboard />

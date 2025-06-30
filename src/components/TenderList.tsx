@@ -134,12 +134,9 @@ const TenderList: React.FC = () => {
           <title>Loading Opportunities | BidBase</title>
           <meta name="description" content="Loading government procurement opportunities..." />
         </Helmet>
-        <div className="space-y-3"> {/* Reduced spacing */}
-          {/* Search Box Skeleton */}
-          <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div> {/* Smaller height */}
-
-          {/* Tenders Grid Skeleton */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"> {/* Reduced gap */}
+        <div className="space-y-3">
+          <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }, (_, index) => (
               <SkeletonCard key={index} />
             ))}
@@ -157,18 +154,18 @@ const TenderList: React.FC = () => {
           <meta name="description" content="Unable to load government opportunities. Please try again." />
           <meta name="robots" content="noindex, nofollow" />
         </Helmet>
-        <div className="text-center py-8 px-4"> {/* Reduced padding */}
-          <div className="bg-white rounded-lg border border-red-200 p-4 max-w-md mx-auto"> {/* Reduced padding */}
-            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-3"> {/* Smaller size and margin */}
-              <AlertCircle className="w-5 h-5 text-red-600" /> {/* Smaller icon */}
+        <div className="text-center py-8 px-4">
+          <div className="bg-white rounded-lg border border-red-200 p-4 max-w-md mx-auto">
+            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+              <AlertCircle className="w-5 h-5 text-red-600" />
             </div>
-            <h3 className="text-base font-semibold text-gray-900 mb-2">Unable to load opportunities</h3> {/* Smaller text */}
-            <p className="text-red-600 text-sm mb-4"> {/* Smaller text and margin */}
+            <h3 className="text-base font-semibold text-gray-900 mb-2">Unable to load opportunities</h3>
+            <p className="text-red-600 text-sm mb-4">
               {error instanceof Error ? error.message : 'An error occurred while loading government opportunities'}
             </p>
             <button
               onClick={() => refetch()}
-              className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium text-sm" /* Smaller padding and text */
+              className="w-full px-3 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-md hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium text-sm"
             >
               Try Again
             </button>
@@ -216,21 +213,21 @@ const TenderList: React.FC = () => {
         </script>
       </Helmet>
 
-      <div className="space-y-3"> {/* Reduced spacing */}
+      <div className="space-y-3">
         {/* Enhanced Search and Filter Section */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
           {/* Main Search Bar */}
-          <div className="p-3 border-b border-gray-100"> {/* Reduced padding */}
+          <div className="p-3 border-b border-gray-100">
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" /> {/* Smaller icon */}
+                <Search className="h-4 w-4 text-gray-400" />
               </div>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearchInputChange(e.target.value)}
                 placeholder="Search government opportunities by title, department, or category..."
-                className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200" /* Smaller padding and text */
+                className="block w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all duration-200"
               />
               {searchQuery && (
                 <button
@@ -238,43 +235,43 @@ const TenderList: React.FC = () => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-600 transition-colors"
                   aria-label="Clear search"
                 >
-                  <X className="h-4 w-4 text-gray-400" /> {/* Smaller icon */}
+                  <X className="h-4 w-4 text-gray-400" />
                 </button>
               )}
               {(isSearching || isFetching) && (
                 <div className="absolute right-10 top-1/2 transform -translate-y-1/2">
-                  <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div> {/* Smaller spinner */}
+                  <div className="w-4 h-4 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
                 </div>
               )}
             </div>
 
             {/* Filter Toggle and Status */}
-            <div className="flex items-center justify-between mt-3"> {/* Reduced margin */}
+            <div className="flex items-center justify-between mt-3">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-1.5 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-xs font-medium" /* Smaller padding and text */
+                className="flex items-center space-x-1.5 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-xs font-medium"
               >
-                <Filter className="w-3.5 h-3.5" /> {/* Smaller icon */}
+                <Filter className="w-3.5 h-3.5" />
                 <span>Advanced Filters</span>
                 {showFilters ? (
-                  <ChevronUp className="w-3.5 h-3.5" /> /* Smaller icon */
+                  <ChevronUp className="w-3.5 h-3.5" />
                 ) : (
-                  <ChevronDown className="w-3.5 h-3.5" /> /* Smaller icon */
+                  <ChevronDown className="w-3.5 h-3.5" />
                 )}
                 {hasActiveFilters && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"> {/* Smaller padding and text */}
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
                     Active
                   </span>
                 )}
               </button>
 
               {/* Search Status */}
-              <div className="text-xs text-gray-600"> {/* Smaller text */}
+              <div className="text-xs text-gray-600">
                 {searchQuery && (
                   <>
                     {isSearching ? (
-                      <div className="flex items-center space-x-1.5"> {/* Reduced spacing */}
-                        <div className="w-3 h-3 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div> {/* Smaller spinner */}
+                      <div className="flex items-center space-x-1.5">
+                        <div className="w-3 h-3 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
                         <span>Searching...</span>
                       </div>
                     ) : debouncedSearchQuery ? (
@@ -292,53 +289,53 @@ const TenderList: React.FC = () => {
 
           {/* Active Filter Tags */}
           {hasActiveFilters && (
-            <div className="px-3 py-2.5 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100"> {/* Reduced padding */}
-              <div className="flex items-center space-x-1.5 mb-2"> {/* Reduced spacing and margin */}
-                <span className="text-xs font-medium text-gray-700">Active filters:</span> {/* Smaller text */}
-                <span className="text-xs text-gray-500">Click any tag to remove</span> {/* Smaller text */}
+            <div className="px-3 py-2.5 bg-gradient-to-r from-blue-50 to-purple-50 border-b border-gray-100">
+              <div className="flex items-center space-x-1.5 mb-2">
+                <span className="text-xs font-medium text-gray-700">Active filters:</span>
+                <span className="text-xs text-gray-500">Click any tag to remove</span>
               </div>
-              <div className="flex flex-wrap gap-1.5"> {/* Reduced gap */}
+              <div className="flex flex-wrap gap-1.5">
                 {debouncedSearchQuery && (
-                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition-colors cursor-pointer group"> {/* Smaller padding and text */}
-                    <Search className="w-2.5 h-2.5 mr-1" /> {/* Smaller icon and margin */}
+                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition-colors cursor-pointer group">
+                    <Search className="w-2.5 h-2.5 mr-1" />
                     <span className="font-medium">Search:</span>
-                    <span className="ml-1 max-w-24 truncate">"{debouncedSearchQuery}"</span> {/* Reduced max width */}
+                    <span className="ml-1 max-w-24 truncate">"{debouncedSearchQuery}"</span>
                     <button
                       onClick={clearSearch}
-                      className="ml-1.5 hover:text-blue-600 transition-colors group-hover:bg-blue-300 rounded-full p-0.5" /* Reduced margin and padding */}
+                      className="ml-1.5 hover:text-blue-600 transition-colors group-hover:bg-blue-300 rounded-full p-0.5"
                       aria-label="Clear search filter"
                     >
-                      <X className="w-2.5 h-2.5" /> {/* Smaller icon */}
+                      <X className="w-2.5 h-2.5" />
                     </button>
                   </div>
                 )}
                 
                 {selectedProvince !== PROVINCES[0] && (
-                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 border border-green-200 hover:bg-green-200 transition-colors cursor-pointer group"> {/* Smaller padding and text */}
-                    <MapPin className="w-2.5 h-2.5 mr-1" /> {/* Smaller icon and margin */}
+                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 border border-green-200 hover:bg-green-200 transition-colors cursor-pointer group">
+                    <MapPin className="w-2.5 h-2.5 mr-1" />
                     <span className="font-medium">Province:</span>
                     <span className="ml-1">{selectedProvince}</span>
                     <button
                       onClick={clearProvinceFilter}
-                      className="ml-1.5 hover:text-green-600 transition-colors group-hover:bg-green-300 rounded-full p-0.5" /* Reduced margin and padding */
+                      className="ml-1.5 hover:text-green-600 transition-colors group-hover:bg-green-300 rounded-full p-0.5"
                       aria-label="Clear province filter"
                     >
-                      <X className="w-2.5 h-2.5" /> {/* Smaller icon */}
+                      <X className="w-2.5 h-2.5" />
                     </button>
                   </div>
                 )}
                 
                 {selectedIndustry !== INDUSTRIES[0] && (
-                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200 transition-colors cursor-pointer group"> {/* Smaller padding and text */}
-                    <Briefcase className="w-2.5 h-2.5 mr-1" /> {/* Smaller icon and margin */}
+                  <div className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200 transition-colors cursor-pointer group">
+                    <Briefcase className="w-2.5 h-2.5 mr-1" />
                     <span className="font-medium">Industry:</span>
                     <span className="ml-1">{selectedIndustry}</span>
                     <button
                       onClick={clearIndustryFilter}
-                      className="ml-1.5 hover:text-purple-600 transition-colors group-hover:bg-purple-300 rounded-full p-0.5" /* Reduced margin and padding */
+                      className="ml-1.5 hover:text-purple-600 transition-colors group-hover:bg-purple-300 rounded-full p-0.5"
                       aria-label="Clear industry filter"
                     >
-                      <X className="w-2.5 h-2.5" /> {/* Smaller icon */}
+                      <X className="w-2.5 h-2.5" />
                     </button>
                   </div>
                 )}
@@ -348,18 +345,18 @@ const TenderList: React.FC = () => {
 
           {/* Filter Dropdowns */}
           {showFilters && (
-            <div className="p-3 bg-gray-50"> {/* Reduced padding */}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"> {/* Reduced gap */}
-                <div className="space-y-1.5"> {/* Reduced spacing */}
-                  <label htmlFor="province-filter" className="block text-xs font-medium text-gray-700"> {/* Smaller text */}
-                    <MapPin className="w-3 h-3 inline mr-1" /> {/* Smaller icon and margin */}
+            <div className="p-3 bg-gray-50">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="space-y-1.5">
+                  <label htmlFor="province-filter" className="block text-xs font-medium text-gray-700">
+                    <MapPin className="w-3 h-3 inline mr-1" />
                     Province
                   </label>
                   <select
                     id="province-filter"
                     value={selectedProvince}
                     onChange={(e) => setSelectedProvince(e.target.value)}
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs py-2 transition-colors bg-white" /* Smaller text and padding */
+                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs py-2 transition-colors bg-white"
                   >
                     {PROVINCES.map(province => (
                       <option key={province} value={province}>{province}</option>
@@ -367,16 +364,16 @@ const TenderList: React.FC = () => {
                   </select>
                 </div>
                 
-                <div className="space-y-1.5"> {/* Reduced spacing */}
-                  <label htmlFor="industry-filter" className="block text-xs font-medium text-gray-700"> {/* Smaller text */}
-                    <Briefcase className="w-3 h-3 inline mr-1" /> {/* Smaller icon and margin */}
+                <div className="space-y-1.5">
+                  <label htmlFor="industry-filter" className="block text-xs font-medium text-gray-700">
+                    <Briefcase className="w-3 h-3 inline mr-1" />
                     Industry
                   </label>
                   <select
                     id="industry-filter"
                     value={selectedIndustry}
                     onChange={(e) => setSelectedIndustry(e.target.value)}
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs py-2 transition-colors bg-white" /* Smaller text and padding */
+                    className="w-full border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-xs py-2 transition-colors bg-white"
                   >
                     {INDUSTRIES.map(industry => (
                       <option key={industry} value={industry}>{industry}</option>
@@ -389,9 +386,9 @@ const TenderList: React.FC = () => {
                   <div className="flex items-end">
                     <button
                       onClick={clearAllFilters}
-                      className="flex items-center justify-center space-x-1.5 w-full px-3 py-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 rounded-lg transition-colors font-medium" /* Smaller padding, spacing, and text */
+                      className="flex items-center justify-center space-x-1.5 w-full px-3 py-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 rounded-lg transition-colors font-medium"
                     >
-                      <X className="w-3 h-3" /> {/* Smaller icon */}
+                      <X className="w-3 h-3" />
                       <span>Clear all filters</span>
                     </button>
                   </div>
@@ -399,12 +396,12 @@ const TenderList: React.FC = () => {
               </div>
 
               {/* Filter Tips */}
-              <div className="mt-3 pt-3 border-t border-gray-200"> {/* Reduced margin and padding */}
-                <div className="flex items-start space-x-1.5 text-xs text-gray-500"> {/* Reduced spacing and text */}
-                  <Zap className="w-3 h-3 text-blue-500 flex-shrink-0 mt-0.5" /> {/* Smaller icon */}
+              <div className="mt-3 pt-3 border-t border-gray-200">
+                <div className="flex items-start space-x-1.5 text-xs text-gray-500">
+                  <Zap className="w-3 h-3 text-blue-500 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="font-medium text-gray-700 mb-1">Pro Tips:</p>
-                    <ul className="space-y-0.5"> {/* Reduced spacing */}
+                    <ul className="space-y-0.5">
                       <li>• Use specific keywords like "IT services" or "construction" for better results</li>
                       <li>• Combine province and industry filters to find local opportunities</li>
                       <li>• Check back regularly - new opportunities are added daily</li>
@@ -418,23 +415,23 @@ const TenderList: React.FC = () => {
 
         {/* Results Summary */}
         {data && data.tenders.length > 0 && (
-          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm"> {/* Reduced padding */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1.5 sm:space-y-0"> {/* Reduced spacing */}
-              <div className="flex items-center space-x-3"> {/* Reduced spacing */}
-                <p className="text-xs text-gray-600"> {/* Smaller text */}
+          <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-1.5 sm:space-y-0">
+              <div className="flex items-center space-x-3">
+                <p className="text-xs text-gray-600">
                   Showing <span className="text-gray-900 font-medium">{((currentPage - 1) * tendersPerPage) + 1}</span> to{' '}
                   <span className="text-gray-900 font-medium">{Math.min(currentPage * tendersPerPage, data.pagination.total)}</span> of{' '}
                   <span className="text-gray-900 font-medium">{data.pagination.total.toLocaleString()}</span> opportunities
                   {hasActiveFilters && <span className="text-blue-600 font-medium"> (filtered)</span>}
                 </p>
                 {hasActiveFilters && (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200"> {/* Smaller padding and text */}
-                    <Filter className="w-2.5 h-2.5 mr-1" /> {/* Smaller icon and margin */}
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                    <Filter className="w-2.5 h-2.5 mr-1" />
                     Filtered
                   </span>
                 )}
               </div>
-              <p className="text-xs text-gray-500"> {/* Smaller text */}
+              <p className="text-xs text-gray-500">
                 Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{data.pagination.totalPages}</span>
               </p>
             </div>
@@ -443,15 +440,15 @@ const TenderList: React.FC = () => {
 
         {/* Tenders Grid */}
         {!data?.tenders || data.tenders.length === 0 ? (
-          <div className="text-center py-8 px-4"> {/* Reduced padding */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6 max-w-lg mx-auto shadow-sm"> {/* Reduced padding */}
-              <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4"> {/* Smaller size and margin */}
-                {hasActiveFilters ? <Search className="w-6 h-6 text-blue-600" /> : <Zap className="w-6 h-6 text-blue-600" />} {/* Smaller icons */}
+          <div className="text-center py-8 px-4">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 max-w-lg mx-auto shadow-sm">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                {hasActiveFilters ? <Search className="w-6 h-6 text-blue-600" /> : <Zap className="w-6 h-6 text-blue-600" />}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2"> {/* Smaller text and margin */}
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
                 {hasActiveFilters ? 'No matching opportunities found' : 'No open opportunities found'}
               </h3>
-              <p className="text-gray-600 mb-4 text-sm leading-relaxed"> {/* Smaller text and margin */}
+              <p className="text-gray-600 mb-4 text-sm leading-relaxed">
                 {hasActiveFilters 
                   ? `No government opportunities match your current search criteria. Try adjusting your filters or exploring all available opportunities.`
                   : 'No open government opportunities are currently available. Check back soon for new procurement opportunities!'
@@ -460,19 +457,19 @@ const TenderList: React.FC = () => {
               {hasActiveFilters && (
                 <button
                   onClick={clearAllFilters}
-                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium text-sm shadow-sm" /* Smaller padding and text */
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 font-medium text-sm shadow-sm"
                 >
                   Clear Filters & Explore All
                 </button>
               )}
               
               {/* Encouragement */}
-              <div className="mt-6 pt-4 border-t border-gray-200"> {/* Reduced margin and padding */}
-                <div className="flex items-center justify-center space-x-1.5 mb-2"> {/* Reduced spacing and margin */}
-                  <Zap className="w-3 h-3 text-blue-600" /> {/* Smaller icon */}
-                  <span className="text-xs font-medium text-gray-900">BidBase Tip</span> {/* Smaller text */}
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="flex items-center justify-center space-x-1.5 mb-2">
+                  <Zap className="w-3 h-3 text-blue-600" />
+                  <span className="text-xs font-medium text-gray-900">BidBase Tip</span>
                 </div>
-                <p className="text-xs text-gray-500 leading-relaxed"> {/* Smaller text */}
+                <p className="text-xs text-gray-500 leading-relaxed">
                   New opportunities are added regularly. Use our advanced filters to find opportunities that match your business expertise and location preferences!
                 </p>
               </div>
@@ -481,15 +478,15 @@ const TenderList: React.FC = () => {
         ) : (
           <>
             {isFetching && !isLoading ? (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"> {/* Reduced gap */}
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {Array.from({ length: tendersPerPage }, (_, index) => (
                   <SkeletonCard key={index} />
                 ))}
               </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"> {/* Reduced gap */}
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {data.tenders.map((tender, index) => (
-                  <div key={tender.ocid} className="animate-slide-up" style={{ animationDelay: `${index * 15}ms` }}> {/* Faster animation */}
+                  <div key={tender.ocid} className="animate-slide-up" style={{ animationDelay: `${index * 15}ms` }}>
                     <TenderCard tender={tender} />
                   </div>
                 ))}
@@ -498,19 +495,19 @@ const TenderList: React.FC = () => {
 
             {/* Pagination Controls */}
             {data.pagination.totalPages > 1 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm"> {/* Reduced padding */}
+              <div className="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
                 <div className="flex items-center justify-between">
                   <button
                     onClick={goToPrevious}
                     disabled={currentPage === 1 || isFetching}
-                    className="flex items-center space-x-1.5 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-xs" /* Smaller padding, spacing, and text */
+                    className="flex items-center space-x-1.5 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-xs"
                   >
-                    <ChevronLeft className="w-3.5 h-3.5" /> {/* Smaller icon */}
+                    <ChevronLeft className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Previous</span>
                     <span className="sm:hidden">Prev</span>
                   </button>
 
-                  <div className="flex items-center space-x-1"> {/* Reduced spacing */}
+                  <div className="flex items-center space-x-1">
                     {Array.from({ length: Math.min(5, data.pagination.totalPages) }, (_, i) => {
                       let pageNum;
                       if (data.pagination.totalPages <= 5) {
@@ -532,7 +529,7 @@ const TenderList: React.FC = () => {
                             currentPage === pageNum
                               ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-sm'
                               : 'border border-gray-300 hover:bg-gray-50 text-gray-700'
-                          }`} /* Smaller padding and text */
+                          }`}
                         >
                           {pageNum}
                         </button>
@@ -541,11 +538,11 @@ const TenderList: React.FC = () => {
                     
                     {data.pagination.totalPages > 5 && currentPage < data.pagination.totalPages - 2 && (
                       <>
-                        <span className="px-1.5 text-gray-400 text-xs">...</span> {/* Smaller padding and text */}
+                        <span className="px-1.5 text-gray-400 text-xs">...</span>
                         <button
                           onClick={() => goToPage(data.pagination.totalPages)}
                           disabled={isFetching}
-                          className="px-2.5 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700 text-xs disabled:opacity-50" /* Smaller padding and text */
+                          className="px-2.5 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium text-gray-700 text-xs disabled:opacity-50"
                         >
                           {data.pagination.totalPages}
                         </button>
@@ -556,11 +553,11 @@ const TenderList: React.FC = () => {
                   <button
                     onClick={goToNext}
                     disabled={currentPage === data.pagination.totalPages || isFetching}
-                    className="flex items-center space-x-1.5 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-xs" /* Smaller padding, spacing, and text */
+                    className="flex items-center space-x-1.5 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-xs"
                   >
                     <span className="hidden sm:inline">Next</span>
                     <span className="sm:hidden">Next</span>
-                    <ChevronRight className="w-3.5 h-3.5" /> {/* Smaller icon */}
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>

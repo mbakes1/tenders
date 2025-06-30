@@ -68,6 +68,7 @@ function App() {
           </Router>
         </ToastProvider>
       </QueryProvider>
+    }
     </ErrorBoundary>
   );
 }

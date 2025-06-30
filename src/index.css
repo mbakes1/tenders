@@ -45,6 +45,11 @@
     animation: slideUp 0.2s ease-out;
   }
 
+  /* Toast progress bar animation */
+  .animate-shrink-width {
+    animation: shrink-width linear forwards;
+  }
+
   /* Mobile-optimized scrollbars */
   .scrollbar-thin {
     scrollbar-width: thin;
@@ -88,6 +93,11 @@
 @keyframes slideUp {
   from { transform: translateY(8px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes shrink-width {
+  from { width: 100%; }
+  to { width: 0%; }
 }
 
 /* Mobile-specific optimizations */

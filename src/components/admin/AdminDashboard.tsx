@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useAdminStats, useRecentActivity } from '../../lib/queries';
 import { performHealthCheck, triggerDataSync, triggerFullResync, getSyncStatistics } from '../../lib/supabase';
+import { useToast } from '../../providers/ToastProvider';
 
 const AdminDashboard: React.FC = () => {
   const [healthStatus, setHealthStatus] = React.useState<any>(null);
@@ -28,6 +29,9 @@ const AdminDashboard: React.FC = () => {
   const [fullSyncing, setFullSyncing] = React.useState(false);
   const [syncStats, setSyncStats] = React.useState<any>(null);
   const [lastRefresh, setLastRefresh] = React.useState<Date>(new Date());
+
+  // Toast notifications
+  const { showSuccess, showError, showInfo, showWarning } = useToast();
 
   // Use TanStack Query for data fetching
   const {
@@ -85,52 +89,63 @@ const AdminDashboard: React.FC = () => {
 
   const handleRefresh = async () => {
     setLastRefresh(new Date());
-    await Promise.all([
-      refetchStats(),
-      refetchActivity(),
-      checkHealth(),
-      loadSyncStats()
-    ]);
+    showInfo('Refreshing Dashboard', 'Loading latest data...');
+    
+    try {
+      await Promise.all([
+        refetchStats(),
+        refetchActivity(),
+        checkHealth(),
+        loadSyncStats()
+      ]);
+      showSuccess('Dashboard Refreshed', 'All data has been updated successfully.');
+    } catch (error) {
+      showError('Refresh Failed', 'Unable to refresh dashboard data. Please try again.');
+    }
   };
 
   const handleIncrementalSync = async () => {
     setSyncing(true);
+    showInfo('Starting Sync', 'Initiating incremental data synchronization...');
+    
     try {
       const result = await triggerDataSync();
       if (result.success) {
-        // Show success notification
         const message = `${result.syncType || 'Incremental'} sync completed! Fetched ${result.data?.stats?.totalFetched || 0} tenders.`;
-        alert(message);
+        showSuccess('Sync Completed', message);
         await handleRefresh();
       } else {
-        alert(`Sync failed: ${result.error || 'Unknown error'}`);
+        showError('Sync Failed', result.error || 'Unknown error occurred during synchronization.');
       }
     } catch (error) {
       console.error('Incremental sync error:', error);
-      alert('Sync failed. Please check the console for details.');
+      showError('Sync Error', 'Synchronization failed. Please check the console for details.');
     } finally {
       setSyncing(false);
     }
   };
 
   const handleFullResync = async () => {
-    if (!confirm('Full resync will take several minutes and may impact performance. Continue?')) {
+    const confirmed = confirm('Full resync will take several minutes and may impact performance. Continue?');
+    if (!confirmed) {
       return;
     }
     
     setFullSyncing(true);
+    showWarning('Starting Full Resync', 'This operation will take several minutes. Please do not close this page.');
+    
     try {
       const result = await triggerFullResync();
       if (result.success) {
         const message = `Full resync completed! Processed ${result.data?.stats?.totalFetched || 0} tenders.`;
-        alert(message);
+        showSuccess('Full Resync Completed', message);
         await handleRefresh();
       } else {
-        alert(`Full resync failed: ${result.error || 'Unknown error'}`);
+        showError('Full Resync Failed', result.error || 'Unknown error occurred during full resync.');
       }
     } catch (error) {
       console.error('Full resync error:', error);
-      alert('Full resync failed. Please check the console for details.');
+      showError('Full Resync Error', 'Full resync failed. Please check the console for details.');
     } finally {
       setFullSyncing(false);
     }

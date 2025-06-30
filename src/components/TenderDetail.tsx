@@ -27,11 +27,13 @@ import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
 import { useTender, useCacheUtils } from '../lib/queries';
 import { downloadDocumentProxy, type Tender } from '../lib/supabase';
+import { useToast } from '../providers/ToastProvider';
 
 const TenderDetail: React.FC = () => {
   const { ocid } = useParams<{ ocid: string }>();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { prefetchTender } = useCacheUtils();
+  const { showError, showInfo } = useToast();
 
   const decodedOcid = ocid ? decodeURIComponent(ocid) : '';
 
@@ -104,6 +106,13 @@ const TenderDetail: React.FC = () => {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Download error:', error);
+      
+      // Show user-friendly error notification
+      showError(
+        'Download Failed', 
+        'Unable to download the document directly. Opening in a new tab instead.'
+      );
+      
       // Track document view as fallback with PostHog
       if (tender && window.posthog) {
         window.posthog.capture('document_viewed', {
@@ -112,6 +121,8 @@ const TenderDetail: React.FC = () => {
           document_type: doc.documentType || 'unknown',
         });
       }
+      
+      // Fallback to opening in new tab
       window.open(doc.url, '_blank');
     }
   };

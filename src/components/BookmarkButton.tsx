@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Bookmark, BookmarkCheck, AlertCircle } from 'lucide-react';
 import { useIsBookmarked, useAddBookmark, useRemoveBookmark } from '../lib/queries';
 import { useCurrentUser } from '../lib/queries';
-import { useTenderTracking } from '../hooks/useAnalytics';
 
 interface BookmarkButtonProps {
   tenderOcid: string;
@@ -16,7 +15,6 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({
   className = "" 
 }) => {
   const [error, setError] = useState<string | null>(null);
-  const { trackTenderBookmark } = useTenderTracking();
 
   // Use TanStack Query for state management
   const { data: currentUser } = useCurrentUser();
@@ -55,12 +53,24 @@ const BookmarkButton: React.FC<BookmarkButtonProps> = ({
     try {
       if (isBookmarked) {
         await removeBookmarkMutation.mutateAsync(tenderOcid);
-        // Track unbookmark event
-        trackTenderBookmark({ ocid: tenderOcid }, user.id, 'remove');
+        // Track unbookmark event with PostHog
+        if (window.posthog) {
+          window.posthog.capture('tender_unbookmarked', {
+            tender_ocid: tenderOcid,
+            tender_title: 'Unknown', // We don't have tender details here
+            user_id: user.id,
+          });
+        }
       } else {
         await addBookmarkMutation.mutateAsync(tenderOcid);
-        // Track bookmark event
-        trackTenderBookmark({ ocid: tenderOcid }, user.id, 'add');
+        // Track bookmark event with PostHog
+        if (window.posthog) {
+          window.posthog.capture('tender_bookmarked', {
+            tender_ocid: tenderOcid,
+            tender_title: 'Unknown', // We don't have tender details here
+            user_id: user.id,
+          });
+        }
       }
     } catch (err) {
       console.error('Bookmark operation failed:', err);

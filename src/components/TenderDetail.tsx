@@ -26,15 +26,12 @@ import SkeletonDetail from './SkeletonDetail';
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
 import { useTender, useCacheUtils } from '../lib/queries';
-import { useTenderTracking, useDocumentTracking } from '../hooks/useAnalytics';
 import { downloadDocumentProxy, type Tender } from '../lib/supabase';
 
 const TenderDetail: React.FC = () => {
   const { ocid } = useParams<{ ocid: string }>();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { prefetchTender } = useCacheUtils();
-  const { trackTenderView } = useTenderTracking();
-  const { trackDocumentDownload, trackDocumentView } = useDocumentTracking();
 
   const decodedOcid = ocid ? decodeURIComponent(ocid) : '';
 
@@ -48,10 +45,21 @@ const TenderDetail: React.FC = () => {
 
   // Track tender view when data loads
   React.useEffect(() => {
-    if (tender) {
-      trackTenderView(tender, 'direct');
+    if (tender && window.posthog) {
+      const daysUntilClose = tender.close_date ? 
+        Math.ceil((new Date(tender.close_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 
+        undefined;
+
+      window.posthog.capture('tender_viewed', {
+        tender_ocid: tender.ocid,
+        tender_title: tender.title || 'Untitled',
+        tender_category: tender.category,
+        tender_buyer: tender.buyer,
+        days_until_close: daysUntilClose,
+        source: 'direct',
+      });
     }
-  }, [tender, trackTenderView]);
+  }, [tender]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-ZA', {
@@ -73,9 +81,14 @@ const TenderDetail: React.FC = () => {
 
   const downloadDocument = async (doc: any) => {
     try {
-      // Track document download
-      if (tender) {
-        trackDocumentDownload(tender, doc);
+      // Track document download with PostHog
+      if (tender && window.posthog) {
+        window.posthog.capture('document_downloaded', {
+          tender_ocid: tender.ocid,
+          document_title: doc.title || 'Untitled Document',
+          document_type: doc.documentType || 'unknown',
+          file_format: doc.format,
+        });
       }
       
       const blob = await downloadDocumentProxy(doc);
@@ -91,9 +104,13 @@ const TenderDetail: React.FC = () => {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Download error:', error);
-      // Track document view as fallback
-      if (tender) {
-        trackDocumentView(tender, doc);
+      // Track document view as fallback with PostHog
+      if (tender && window.posthog) {
+        window.posthog.capture('document_viewed', {
+          tender_ocid: tender.ocid,
+          document_title: doc.title || 'Untitled Document',
+          document_type: doc.documentType || 'unknown',
+        });
       }
       window.open(doc.url, '_blank');
     }
@@ -624,7 +641,15 @@ const TenderDetail: React.FC = () => {
                             href={doc.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onClick={() => trackDocumentView(tender, doc)}
+                            onClick={() => {
+                              if (tender && window.posthog) {
+                                window.posthog.capture('document_viewed', {
+                                  tender_ocid: tender.ocid,
+                                  document_title: doc.title || 'Untitled Document',
+                                  document_type: doc.documentType || 'unknown',
+                                });
+                              }
+                            }}
                             className="flex items-center space-x-1 px-3 py-2 border border-gray-300 text-gray-600 rounded-md hover:bg-gray-50 transition-colors text-sm"
                           >
                             <ExternalLink className="w-4 h-4" />

@@ -4,7 +4,6 @@ import { Calendar, Building, ExternalLink, Clock, AlertTriangle } from 'lucide-r
 import BookmarkButton from './BookmarkButton';
 import AuthModal from './AuthModal';
 import { useCacheUtils } from '../lib/queries';
-import { useTenderTracking } from '../hooks/useAnalytics';
 import { type Tender } from '../lib/supabase';
 
 interface TenderCardProps {
@@ -14,7 +13,6 @@ interface TenderCardProps {
 const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const { prefetchTender } = useCacheUtils();
-  const { trackTenderView } = useTenderTracking();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-ZA', {
@@ -62,8 +60,21 @@ const TenderCard: React.FC<TenderCardProps> = ({ tender }) => {
   };
 
   const handleCardClick = () => {
-    // Track tender view when card is clicked
-    trackTenderView(tender, 'browse');
+    // Track tender view when card is clicked with PostHog
+    if (window.posthog) {
+      const daysUntilClose = tender.close_date ? 
+        Math.ceil((new Date(tender.close_date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 
+        undefined;
+
+      window.posthog.capture('tender_viewed', {
+        tender_ocid: tender.ocid,
+        tender_title: tender.title || 'Untitled',
+        tender_category: tender.category,
+        tender_buyer: tender.buyer,
+        days_until_close: daysUntilClose,
+        source: 'browse',
+      });
+    }
   };
 
   return (

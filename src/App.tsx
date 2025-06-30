@@ -34,7 +34,7 @@ function App() {
       }}
     >
       <QueryProvider>
-        <ToastProvider maxToasts={3} defaultDuration={4000> {/* Reduced max toasts and duration */}
+        <ToastProvider maxToasts={3} defaultDuration={4000}> {/* Reduced max toasts and duration */}
           <Router>
             <div className="min-h-screen bg-gray-50">
               <Header />
@@ -68,7 +68,6 @@ function App() {
           </Router>
         </ToastProvider>
       </QueryProvider>
-    }
     </ErrorBoundary>
   );
 }

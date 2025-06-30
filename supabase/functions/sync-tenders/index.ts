@@ -146,6 +146,108 @@ const isOpenTender = (release: TenderRelease): boolean => {
   return endDate > now;
 };
 
+// Enhanced retry mechanism with exponential backoff
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const fetchWithRetry = async (
+  url: string, 
+  options: RequestInit = {}, 
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<Response> => {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`API request attempt ${attempt + 1}/${maxRetries + 1}: ${url}`);
+      
+      const response = await fetch(url, {
+        ...options,
+        headers: {
+          'User-Agent': 'Supabase-Edge-Function/1.0',
+          'Accept': 'application/json',
+          'Connection': 'keep-alive',
+          ...options.headers
+        }
+      });
+
+      // Handle different types of errors
+      if (response.ok) {
+        console.log(`✅ API request successful on attempt ${attempt + 1}`);
+        return response;
+      }
+
+      // Determine if we should retry based on status code
+      const shouldRetry = shouldRetryRequest(response.status, attempt, maxRetries);
+      
+      if (!shouldRetry) {
+        throw new Error(`API request failed with status ${response.status}: ${response.statusText} (non-retryable)`);
+      }
+
+      console.warn(`⚠️ API request failed with status ${response.status} on attempt ${attempt + 1}, will retry...`);
+      lastError = new Error(`API request failed: ${response.status} ${response.statusText}`);
+
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown fetch error');
+      
+      // Don't retry on certain types of errors
+      if (isNonRetryableError(lastError)) {
+        console.error(`❌ Non-retryable error: ${lastError.message}`);
+        throw lastError;
+      }
+
+      console.warn(`⚠️ API request error on attempt ${attempt + 1}: ${lastError.message}`);
+    }
+
+    // Don't wait after the last attempt
+    if (attempt < maxRetries) {
+      const delay = calculateBackoffDelay(attempt, baseDelay);
+      console.log(`⏳ Waiting ${delay}ms before retry...`);
+      await sleep(delay);
+    }
+  }
+
+  console.error(`❌ All retry attempts exhausted for ${url}`);
+  throw lastError;
+};
+
+const shouldRetryRequest = (statusCode: number, attempt: number, maxRetries: number): boolean => {
+  // Don't retry client errors (4xx) except for specific cases
+  if (statusCode >= 400 && statusCode < 500) {
+    // Retry on rate limiting and request timeout
+    return statusCode === 429 || statusCode === 408;
+  }
+  
+  // Retry on server errors (5xx)
+  if (statusCode >= 500) {
+    return attempt < maxRetries;
+  }
+  
+  return false;
+};
+
+const isNonRetryableError = (error: Error): boolean => {
+  const message = error.message.toLowerCase();
+  
+  // Don't retry on DNS resolution errors, certificate errors, etc.
+  return (
+    message.includes('dns') ||
+    message.includes('certificate') ||
+    message.includes('ssl') ||
+    message.includes('tls') ||
+    message.includes('network error') && message.includes('permanent')
+  );
+};
+
+const calculateBackoffDelay = (attempt: number, baseDelay: number): number => {
+  // Exponential backoff with jitter
+  const exponentialDelay = baseDelay * Math.pow(2, attempt);
+  const jitter = Math.random() * 0.3 * exponentialDelay; // Add up to 30% jitter
+  const maxDelay = 30000; // Cap at 30 seconds
+  
+  return Math.min(exponentialDelay + jitter, maxDelay);
+};
+
 const fetchTendersFromAPI = async (dateFrom: string, dateTo: string, pageNumber = 1, pageSize = 1000) => {
   const url = new URL('https://ocds-api.etenders.gov.za/api/OCDSReleases');
   url.searchParams.append('dateFrom', dateFrom);
@@ -155,18 +257,21 @@ const fetchTendersFromAPI = async (dateFrom: string, dateTo: string, pageNumber 
 
   console.log(`Fetching page ${pageNumber}: ${url.toString()}`);
   
-  const response = await fetch(url.toString(), {
-    headers: {
-      'User-Agent': 'Supabase-Edge-Function/1.0',
-      'Accept': 'application/json'
-    }
-  });
+  // Use enhanced retry mechanism
+  const response = await fetchWithRetry(url.toString(), {}, 3, 1000);
   
   if (!response.ok) {
     throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
   
-  return await response.json();
+  const data = await response.json();
+  
+  // Validate response structure
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid API response: expected JSON object');
+  }
+  
+  return data;
 };
 
 const upsertTenderToDatabase = async (supabaseClient: any, tender: TenderRelease) => {
@@ -288,15 +393,17 @@ Deno.serve(async (req) => {
     let pageNumber = 1;
     let hasMoreData = true;
     let consecutiveEmptyPages = 0;
+    let consecutiveErrors = 0;
     let apiCallsMade = 0;
     const maxConsecutiveEmpty = syncType === 'full' ? 10 : 5;
+    const maxConsecutiveErrors = 5; // New: limit consecutive errors
     const pageSize = 1000;
     
     // Track performance
     const startTime = Date.now();
     
     // Fetch tender data with appropriate limits based on sync type
-    while (hasMoreData && pageNumber <= maxPages && consecutiveEmptyPages < maxConsecutiveEmpty) {
+    while (hasMoreData && pageNumber <= maxPages && consecutiveEmptyPages < maxConsecutiveEmpty && consecutiveErrors < maxConsecutiveErrors) {
       if (Date.now() - startTime > maxExecutionTime) {
         console.log(`Approaching execution time limit (${maxExecutionTime}ms), stopping fetch`);
         break;
@@ -307,6 +414,7 @@ Deno.serve(async (req) => {
         
         const data = await fetchTendersFromAPI(dateFrom, dateTo, pageNumber, pageSize);
         apiCallsMade++;
+        consecutiveErrors = 0; // Reset error counter on success
         
         if (data.releases && data.releases.length > 0) {
           allTenders = allTenders.concat(data.releases);
@@ -326,24 +434,36 @@ Deno.serve(async (req) => {
         // Smaller delay for incremental sync
         const delay = syncType === 'full' ? 50 : 25;
         if (hasMoreData && pageNumber <= maxPages) {
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await sleep(delay);
         }
         
       } catch (error) {
         console.error(`Error fetching page ${pageNumber}:`, error);
+        consecutiveErrors++;
         consecutiveEmptyPages++;
         pageNumber++;
         
-        const maxErrors = syncType === 'full' ? 15 : 5;
-        if (consecutiveEmptyPages >= maxErrors) {
-          console.log('Too many consecutive errors, stopping fetch');
+        // Log detailed error information
+        const errorDetails = {
+          page: pageNumber - 1,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          consecutiveErrors,
+          timestamp: new Date().toISOString()
+        };
+        console.error('Detailed error info:', JSON.stringify(errorDetails));
+        
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          console.log(`Too many consecutive errors (${consecutiveErrors}), stopping fetch`);
           break;
         }
+        
+        // Longer delay after errors
+        await sleep(2000);
       }
     }
     
     const fetchDuration = Date.now() - startTime;
-    console.log(`Fetch completed in ${fetchDuration}ms. Total tenders fetched: ${allTenders.length}, API calls made: ${apiCallsMade}`);
+    console.log(`Fetch completed in ${fetchDuration}ms. Total tenders fetched: ${allTenders.length}, API calls made: ${apiCallsMade}, Consecutive errors: ${consecutiveErrors}`);
     
     // Store all tenders in database
     console.log('Starting database sync...');
@@ -364,7 +484,7 @@ Deno.serve(async (req) => {
       console.log(`Processed batch ${Math.floor(i/batchSize) + 1}: ${successCount} success, ${errorCount} errors`);
       
       // Small delay between batches
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await sleep(50);
     }
     
     // Count open tenders from database
@@ -374,6 +494,12 @@ Deno.serve(async (req) => {
       .gt('close_date', new Date().toISOString());
     
     const openTendersCount = openTendersData?.length || 0;
+    
+    // Determine sync status based on results
+    const syncStatus = consecutiveErrors >= maxConsecutiveErrors ? 'partial_failure' : 'completed';
+    const stoppedReason = consecutiveErrors >= maxConsecutiveErrors 
+      ? `Stopped due to ${consecutiveErrors} consecutive API errors`
+      : null;
     
     // Log the sync operation using the new function
     const { data: logId, error: logError } = await supabase
@@ -395,9 +521,11 @@ Deno.serve(async (req) => {
     }
     
     const result = {
-      success: true,
-      message: `${syncType} sync completed successfully`,
+      success: syncStatus === 'completed',
+      message: `${syncType} sync ${syncStatus === 'completed' ? 'completed successfully' : 'completed with issues'}`,
       syncType,
+      syncStatus,
+      stoppedReason,
       stats: {
         totalFetched: allTenders.length,
         openTenders: openTendersCount,
@@ -405,6 +533,7 @@ Deno.serve(async (req) => {
         errors: errorCount,
         pagesProcessed: pageNumber - 1,
         apiCallsMade,
+        consecutiveErrors,
         executionTimeMs: Date.now() - startTime,
         dateRange: { from: dateFrom, to: dateTo },
         efficiency: {
@@ -414,7 +543,7 @@ Deno.serve(async (req) => {
       }
     };
     
-    console.log(`${syncType} sync completed: ${successCount} tenders stored, ${errorCount} errors, ${apiCallsMade} API calls`);
+    console.log(`${syncType} sync ${syncStatus}: ${successCount} tenders stored, ${errorCount} errors, ${apiCallsMade} API calls, ${consecutiveErrors} consecutive errors`);
     
     return new Response(
       JSON.stringify(result),
@@ -429,6 +558,7 @@ Deno.serve(async (req) => {
         success: false,
         error: error.message,
         syncType: 'unknown',
+        syncStatus: 'failed',
         stats: {
           totalFetched: 0,
           openTenders: 0,
@@ -436,6 +566,7 @@ Deno.serve(async (req) => {
           errors: 1,
           pagesProcessed: 0,
           apiCallsMade: 0,
+          consecutiveErrors: 1,
           executionTimeMs: 0
         }
       }),

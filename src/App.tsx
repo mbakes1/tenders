@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 import { QueryProvider } from './providers/QueryProvider';
 import { ToastProvider } from './providers/ToastProvider';
@@ -35,37 +35,35 @@ function App() {
     >
       <QueryProvider>
         <ToastProvider maxToasts={3} defaultDuration={4000}> {/* Reduced max toasts and duration */}
-          <Router>
-            <div className="min-h-screen bg-gray-50">
-              <Header />
-              <main className="container mx-auto px-3 py-3 max-w-7xl"> {/* Reduced padding */}
-                <Routes>
-                  <Route path="/" element={<TenderList />} />
-                  <Route path="/tender/:ocid" element={<TenderDetail />} />
-                  <Route path="/bookmarks" element={<BookmarksPage />} />
-                  
-                  {/* Admin Routes */}
-                  <Route path="/admin" element={<AdminRoute />}>
-                    <Route 
-                      index 
-                      element={
-                        <Suspense fallback={
-                          <div className="flex items-center justify-center py-8"> {/* Reduced padding */}
-                            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div> {/* Smaller spinner */}
-                          </div>
-                        }>
-                          <AdminDashboard />
-                        </Suspense>
-                      } 
-                    />
-                  </Route>
+          <div className="min-h-screen bg-gray-50">
+            <Header />
+            <main className="container mx-auto px-3 py-3 max-w-7xl"> {/* Reduced padding */}
+              <Routes>
+                <Route path="/" element={<TenderList />} />
+                <Route path="/tender/:ocid" element={<TenderDetail />} />
+                <Route path="/bookmarks" element={<BookmarksPage />} />
+                
+                {/* Admin Routes */}
+                <Route path="/admin" element={<AdminRoute />}>
+                  <Route 
+                    index 
+                    element={
+                      <Suspense fallback={
+                        <div className="flex items-center justify-center py-8"> {/* Reduced padding */}
+                          <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div> {/* Smaller spinner */}
+                        </div>
+                      }>
+                        <AdminDashboard />
+                      </Suspense>
+                    } 
+                  />
+                </Route>
 
-                  {/* 404 Catch-all */}
-                  <Route path="*" element={<ErrorPage type="404" />} />
-                </Routes>
-              </main>
-            </div>
-          </Router>
+                {/* 404 Catch-all */}
+                <Route path="*" element={<ErrorPage type="404" />} />
+              </Routes>
+            </main>
+          </div>
         </ToastProvider>
       </QueryProvider>
     </ErrorBoundary>

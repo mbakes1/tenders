@@ -16,6 +16,6 @@ export default defineConfig(({ command, ssrBuild }) => ({
     } : undefined
   },
   ssr: {
-    noExternal: ['@supabase/supabase-js', '@tanstack/react-query']
+    noExternal: ['@supabase/supabase-js', '@tanstack/react-query', 'react-router-dom']
   }
 }));

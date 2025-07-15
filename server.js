@@ -26,7 +26,7 @@ if (!isProduction) {
     appType: 'custom',
     base
   })
-  app.use(vite.ssrLoadModule)
+  app.use(vite.middlewares)
 } else {
   const compression = (await import('compression')).default
   const sirv = (await import('sirv')).default
